@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CEI Labs Agent — CTF Copilot</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#chat-input">Skip to chat</a>
+
+  <!-- ===== Top status bar ===== -->
+  <header class="statusbar" role="banner">
+    <div class="statusbar__brand">
+      <span class="statusbar__logo" aria-hidden="true">&#9678;</span>
+      <span class="statusbar__title">CEI&nbsp;Labs&nbsp;Agent</span>
+      <span class="statusbar__tag">CTF copilot</span>
+    </div>
+
+    <div class="statusbar__meters" aria-live="polite">
+      <div class="meter" title="System memory">
+        <span class="meter__label">RAM</span>
+        <span class="meter__bar" aria-hidden="true">
+          <span class="meter__fill" id="ram-fill"></span>
+        </span>
+        <span class="meter__value" id="ram-value">&ndash;</span>
+      </div>
+
+      <div class="ollama" id="ollama-indicator" title="Ollama runtime status">
+        <span class="dot dot--unknown" id="ollama-dot" aria-hidden="true"></span>
+        <span class="ollama__text" id="ollama-text">Ollama: checking&hellip;</span>
+      </div>
+
+      <button class="btn btn--ghost btn--sm" id="refresh-btn" type="button" title="Refresh system status">
+        &#8635;&nbsp;Refresh
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ===== Settings panel ===== -->
+    <aside class="panel" aria-label="Settings">
+      <section class="panel__section">
+        <h2 class="panel__heading">Model</h2>
+
+        <label class="field">
+          <span class="field__label" for="model-select">Choose a model</span>
+          <select id="model-select" class="input"></select>
+        </label>
+        <p class="field__hint" id="model-notes"></p>
+
+        <label class="field">
+          <span class="field__label" for="preset-select">Preset</span>
+          <select id="preset-select" class="input"></select>
+        </label>
+        <p class="field__hint" id="preset-hint"></p>
+
+        <div class="install">
+          <button class="btn btn--primary btn--block" id="install-btn" type="button">
+            Install selected model
+          </button>
+          <div class="progress" id="install-progress" hidden>
+            <div class="progress__bar" aria-hidden="true">
+              <div class="progress__fill" id="install-fill"></div>
+            </div>
+            <p class="progress__text" id="install-text" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel__section">
+        <h2 class="panel__heading">SSH target</h2>
+        <form id="ssh-form" class="ssh-form" autocomplete="off">
+          <label class="field">
+            <span class="field__label" for="ssh-host">Host</span>
+            <input class="input" id="ssh-host" name="host" type="text" placeholder="bandit.labs.overthewire.org" />
+          </label>
+
+          <div class="field-row">
+            <label class="field field--grow">
+              <span class="field__label" for="ssh-user">Username</span>
+              <input class="input" id="ssh-user" name="username" type="text" placeholder="bandit0" />
+            </label>
+            <label class="field field--port">
+              <span class="field__label" for="ssh-port">Port</span>
+              <input class="input" id="ssh-port" name="port" type="number" min="1" max="65535" value="22" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label" for="ssh-pass">Password</span>
+            <input class="input" id="ssh-pass" name="password" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" />
+          </label>
+
+          <div class="ssh-form__actions">
+            <button class="btn btn--secondary" id="ssh-test-btn" type="submit">Test &amp; save</button>
+            <span class="ssh-status" id="ssh-status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+    </aside>
+
+    <!-- ===== Chat pane ===== -->
+    <section class="chat" aria-label="Chat">
+      <div class="chat__transcript" id="transcript" aria-live="polite">
+        <div class="empty" id="empty-state">
+          <div class="empty__icon" aria-hidden="true">&#9673;</div>
+          <h3 class="empty__title">Your CTF copilot is ready</h3>
+          <p class="empty__body">
+            Pick a model, connect an SSH target, then ask for help with a
+            challenge. I&rsquo;ll guide you step by step&mdash;explaining more
+            than solving.
+          </p>
+        </div>
+      </div>
+
+      <form class="composer" id="composer">
+        <textarea
+          id="chat-input"
+          class="composer__input"
+          rows="1"
+          placeholder="Ask about a Bandit level, or describe where you're stuck&hellip;"
+          aria-label="Message"></textarea>
+        <button class="btn btn--primary composer__send" id="send-btn" type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
