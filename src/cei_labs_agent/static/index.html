@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="violet">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CEI Labs Agent — CTF Copilot</title>
-  <link rel="stylesheet" href="/style.css" />
+  <!--
+    Typography: the style.css font stacks name Space Grotesk / Public Sans /
+    JetBrains Mono, then fall back to strong system fonts. Per the no-external-CDN
+    / offline constraint we do NOT link a font CDN here. To ship the exact
+    typefaces offline, drop their .woff2 files into static/ and add @font-face
+    rules to style.css — the stacks will pick them up automatically.
+  -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <a class="skip-link" href="#chat-input">Skip to chat</a>
@@ -12,16 +19,16 @@
   <!-- ===== Top status bar ===== -->
   <header class="statusbar" role="banner">
     <div class="statusbar__brand">
-      <span class="statusbar__logo" aria-hidden="true">&#9678;</span>
+      <span class="statusbar__logo" aria-hidden="true">&#8250;_</span>
       <span class="statusbar__title">CEI&nbsp;Labs&nbsp;Agent</span>
-      <span class="statusbar__tag">CTF copilot</span>
     </div>
 
-    <div class="statusbar__meters" aria-live="polite">
-      <div class="meter" title="System memory">
+    <div class="statusbar__meters">
+      <div class="meter" id="ram-meter" title="System memory (free / total)" aria-label="System memory">
         <span class="meter__label">RAM</span>
         <span class="meter__bar" aria-hidden="true">
           <span class="meter__fill" id="ram-fill"></span>
+          <span class="meter__sheen"></span>
         </span>
         <span class="meter__value" id="ram-value">&ndash;</span>
       </div>
@@ -31,7 +38,7 @@
         <span class="ollama__text" id="ollama-text">Ollama: checking&hellip;</span>
       </div>
 
-      <button class="btn btn--ghost btn--sm" id="refresh-btn" type="button" title="Refresh system status">
+      <button class="btn--refresh" id="refresh-btn" type="button" title="Refresh system status">
         &#8635;&nbsp;Refresh
       </button>
     </div>
@@ -41,35 +48,28 @@
     <!-- ===== Settings panel ===== -->
     <aside class="panel" aria-label="Settings">
       <section class="panel__section">
-        <h2 class="panel__heading">Model</h2>
+        <div class="panel__head">
+          <h2 class="panel__heading">Model</h2>
+          <span class="panel__note">picks the best fit for your RAM</span>
+        </div>
 
-        <label class="field">
-          <span class="field__label" for="model-select">Choose a model</span>
-          <select id="model-select" class="input"></select>
-        </label>
-        <p class="field__hint" id="model-notes"></p>
+        <div class="catalog" id="model-catalog" role="radiogroup" aria-label="Model">
+          <!-- tier groups + model cards injected by app.js -->
+        </div>
 
-        <label class="field">
-          <span class="field__label" for="preset-select">Preset</span>
-          <select id="preset-select" class="input"></select>
-        </label>
-        <p class="field__hint" id="preset-hint"></p>
-
-        <div class="install">
-          <button class="btn btn--primary btn--block" id="install-btn" type="button">
-            Install selected model
-          </button>
-          <div class="progress" id="install-progress" hidden>
-            <div class="progress__bar" aria-hidden="true">
-              <div class="progress__fill" id="install-fill"></div>
-            </div>
-            <p class="progress__text" id="install-text" role="status" aria-live="polite"></p>
-          </div>
+        <div class="preset">
+          <div class="preset__label">Preset for <b id="preset-model-name">&mdash;</b></div>
+          <div class="preset__chips" id="preset-chips" role="radiogroup" aria-label="Preset"></div>
+          <p class="preset__hint" id="preset-hint"></p>
         </div>
       </section>
 
       <section class="panel__section">
-        <h2 class="panel__heading">SSH target</h2>
+        <div class="panel__head">
+          <h2 class="panel__heading">SSH target</h2>
+          <span class="panel__note"><span class="dot-info" aria-hidden="true"></span>your practice box</span>
+        </div>
+
         <form id="ssh-form" class="ssh-form" autocomplete="off">
           <label class="field">
             <span class="field__label" for="ssh-host">Host</span>
@@ -93,7 +93,7 @@
           </label>
 
           <div class="ssh-form__actions">
-            <button class="btn btn--secondary" id="ssh-test-btn" type="submit">Test &amp; save</button>
+            <button class="btn--test" id="ssh-test-btn" type="submit">Test &amp; save</button>
             <span class="ssh-status" id="ssh-status" role="status" aria-live="polite"></span>
           </div>
         </form>
@@ -104,30 +104,38 @@
     <section class="chat" aria-label="Chat">
       <div class="chat__transcript" id="transcript" aria-live="polite">
         <div class="empty" id="empty-state">
-          <div class="empty__icon" aria-hidden="true">&#9673;</div>
-          <h3 class="empty__title">Your CTF copilot is ready</h3>
+          <div class="empty__icon" aria-hidden="true">&#8250;_</div>
+          <h3 class="empty__title">Your CTF agent is ready</h3>
           <p class="empty__body">
             Pick a model, connect an SSH target, then ask for help with a
             challenge. I&rsquo;ll guide you step by step&mdash;explaining more
             than solving.
           </p>
+          <div class="empty__steps">
+            <span>1 &middot; Pick a model</span>
+            <span>2 &middot; Connect your box</span>
+            <span>3 &middot; Ask for help</span>
+          </div>
         </div>
       </div>
 
       <form class="composer" id="composer">
-        <textarea
-          id="chat-input"
-          class="composer__input"
-          rows="1"
-          placeholder="Ask about a Bandit level, or describe where you're stuck&hellip;"
-          aria-label="Message"></textarea>
-        <button class="btn btn--primary composer__send" id="send-btn" type="submit">Send</button>
+        <div class="composer__nudge" id="composer-nudge" hidden>&#9888; <span id="composer-nudge-text"></span></div>
+        <div class="composer__row">
+          <textarea
+            id="chat-input"
+            class="composer__input"
+            rows="1"
+            placeholder="Ask about a Bandit level, or describe where you're stuck&hellip;"
+            aria-label="Message"></textarea>
+          <button class="composer__send" id="send-btn" type="submit">Send &#8593;</button>
+        </div>
       </form>
     </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="/app.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
