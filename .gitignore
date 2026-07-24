@@ -1,10 +1,15 @@
-# Python
+# Python bytecode / caches
 __pycache__/
+*.pyc
 *.py[cod]
+
+# Packaging / build artifacts
 *.egg-info/
 .eggs/
 build/
 dist/
+
+# Test / tooling caches
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -14,9 +19,9 @@ dist/
 venv/
 env/
 
-# Local app state (created at runtime under the user's home)
+# Local app state (config + notes created at runtime under the user's home)
 .cei-labs-agent/
 
-# OS / editor
+# OS / editor cruft
 .DS_Store
 *.swp
