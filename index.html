@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CEI Labs — open-source cyber range ecosystem</title>
+<meta name="description" content="Five interlocking modules for self-hosted CTF training events: the range, the course of fire, the terrain, the operation, and the loadout.">
+<meta property="og:title" content="CEI Labs — open-source cyber range ecosystem">
+<meta property="og:description" content="Five interlocking modules for self-hosted CTF training events: the range, the course of fire, the terrain, the operation, and the loadout.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cei-labs.cyberexperts.org/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-module="hub">
+
+<div class="banner">OPEN SOURCE // FIVE MODULES // PUBLIC BUILD</div>
+
+<nav class="nav" aria-label="Site">
+  <div class="wrap">
+    <a class="nav-brand" href="index.html">CEI LABS</a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="navlinks">MENU</button>
+    <ul class="nav-links" id="navlinks">
+      <li><a href="engine/index.html"><span class="n">01</span> ENGINE</a></li>
+      <li><a href="wargames/index.html"><span class="n">02</span> WARGAMES</a></li>
+      <li><a href="net/index.html"><span class="n">03</span> NET</a></li>
+      <li><a href="event/index.html"><span class="n">04</span> EVENT</a></li>
+      <li><a href="agent/index.html"><span class="n">05</span> AGENT</a></li>
+      <li><a href="https://github.com/stoptalkingishh" rel="noopener">SOURCE ↗</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap fid">
+    <i></i><i></i><i></i><i></i>
+    <div class="ghost" aria-hidden="true">00</div>
+    <div class="kicker">CEI-LABS // MODULE 00 — COMMAND</div>
+    <h1>CEI Labs</h1>
+    <p class="sub">An open-source ecosystem for building and running self-hosted cyber training events on budget hardware — the range, the course of fire, the terrain, the operation, and the loadout, as five interlocking modules.</p>
+    <div class="statstrip"><b>5 MODULES</b><span class="dot">·</span><b>59 CHALLENGES</b><span class="dot">·</span><b>3 TRACKS</b><span class="dot">·</span><b>$0 SOFTWARE COST</b><span class="dot">·</span><b>FULLY SELF-HOSTED</b></div>
+    <div class="ctas">
+      <a class="cta" href="#modules">EXPLORE THE MODULES</a>
+      <a class="cta-2" href="https://github.com/stoptalkingishh" rel="noopener">GITHUB ↗</a>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 01 / THE SYSTEM</div>
+    <h2>Five modules, one range</h2>
+    <p style="margin-bottom:36px">How the ecosystem interlocks: the terrain underneath, the range on top of it, the course of fire feeding in, the loadout at the operator edge, and the operation watching all of it.</p>
+    <div class="diagram">
+      <a class="dnode d-wg c-wargames" style="--mc:var(--m-wargames)" href="wargames/index.html">
+        <span class="des">MODULE 02</span>
+        <span class="nm"><span class="led wip" style="background:var(--m-wargames)"></span>WARGAMES</span>
+        <p>The course of fire — 59 challenges across 3 tracks, validated fail-closed.</p>
+      </a>
+      <div class="dconn dc-h d-ch"><span>deploys 59 challenges into (ctfcli → CTFd)</span></div>
+      <a class="dnode d-en" style="--mc:var(--m-engine)" href="engine/index.html">
+        <span class="des">MODULE 01</span>
+        <span class="nm"><span class="led ok"></span>ENGINE</span>
+        <p>The range — a multi-tenant cyber range on bare-metal K3s: CTFd, MultiJuicer, Kali noVNC.</p>
+      </a>
+      <div class="dconn dc-v d-cv"><span>runs on VLAN 20 of</span></div>
+      <a class="dnode d-nt" style="--mc:var(--m-net)" href="net/index.html">
+        <span class="des">MODULE 03</span>
+        <span class="nm"><span class="led ok" style="background:var(--m-net)"></span>NET</span>
+        <p>The terrain — segmented, isolated, throttled network infrastructure everything runs on.</p>
+      </a>
+      <div class="dconn dc-h d-ah"><span>runs locally on each operator's laptop</span></div>
+      <a class="dnode d-ag" style="--mc:var(--m-agent)" href="agent/index.html">
+        <span class="des">MODULE 05</span>
+        <span class="nm"><span class="led ok" style="background:var(--m-agent)"></span>AGENT</span>
+        <p>The loadout — a friendly CTF coaching AI that runs locally on each operator's laptop.</p>
+      </a>
+      <div class="dconn dc-dot"><span>tracks readiness</span></div>
+      <a class="dnode d-ev" style="--mc:var(--m-event)" href="event/index.html">
+        <span class="des">MODULE 04</span>
+        <span class="nm"><span class="led wip" style="background:var(--m-event)"></span>EVENT</span>
+        <p>The operation — a full-scale, self-hosted CTF event: 80 operators, 59 challenges, zero cloud bill.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="modules">
+  <div class="wrap">
+    <div class="sec-label">SEC 02 / MODULES</div>
+    <div class="modgrid">
+      <a class="modcard c-engine" href="engine/index.html">
+        <span class="des">CEI-LABS // MODULE 01 — RANGE PLATFORM</span>
+        <span class="nm">Engine</span>
+        <p>A modular, multi-tenant cyber range on bare-metal K3s.</p>
+        <span class="row"><span class="stat">≤30 OPERATORS</span><span class="go">ENTER →</span></span>
+      </a>
+      <a class="modcard c-wargames" href="wargames/index.html">
+        <span class="des">CEI-LABS // MODULE 02 — COURSE OF FIRE</span>
+        <span class="nm">Wargames</span>
+        <p>59 challenges, three tracks, one fail-closed deploy.</p>
+        <span class="row"><span class="stat">59 CHALLENGES</span><span class="go">ENTER →</span></span>
+      </a>
+      <a class="modcard c-net" href="net/index.html">
+        <span class="des">CEI-LABS // MODULE 03 — TERRAIN</span>
+        <span class="nm">Net</span>
+        <p>Network infrastructure built to survive 80 operators scanning it on purpose.</p>
+        <span class="row"><span class="stat">80 OPERATORS</span><span class="go">ENTER →</span></span>
+      </a>
+      <a class="modcard c-event" href="event/index.html">
+        <span class="des">CEI-LABS // MODULE 04 — THE OPERATION</span>
+        <span class="nm">Event</span>
+        <p>A full-scale, self-hosted CTF experience — 80 operators, 59 challenges.</p>
+        <span class="row"><span class="stat">80 OPERATORS · $0 CLOUD</span><span class="go">ENTER →</span></span>
+      </a>
+      <a class="modcard c-agent" href="agent/index.html">
+        <span class="des">CEI-LABS // MODULE 05 — LOADOUT</span>
+        <span class="nm">Agent</span>
+        <p>A friendly coaching AI that runs on your own laptop — no keys, no cloud, no GPU.</p>
+        <span class="row"><span class="stat">RUNS LOCALLY</span><span class="go">ENTER →</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 03 / HOW A LIVE EVENT COMES TOGETHER</div>
+    <ol class="seq">
+      <li><p><strong>Net</strong> stands up the segmented terrain — VLANs, isolation, DNS lockdown, QoS.</p></li>
+      <li><p><strong>Engine</strong> deploys the range onto VLAN 20 — CTFd, MultiJuicer, analyst workstations.</p></li>
+      <li><p><strong>Wargames</strong> validates fail-closed and loads 59 challenges into CTFd — the administrator starts each track independently.</p></li>
+      <li><p>Each operator's laptop carries the <strong>Agent</strong> loadout — a friendly coaching AI running locally, installed with one command.</p></li>
+      <li><p><strong>Event</strong> tracks every remaining task until doors open.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 04 / BUILT BY</div>
+    <p>CEI Labs was created by <strong>Ismael Rodriguez</strong>, with the support of <strong>Matthew Judge</strong> and <a href="https://cyberexperts.org" rel="noopener">CyberExperts.org</a>.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <a href="https://github.com/stoptalkingishh" rel="noopener">GITHUB ↗</a>
+      <span>LICENSES: PER MODULE — SEE EACH REPO</span>
+      <a href="https://cyberexperts.org" rel="noopener">CYBEREXPERTS.ORG ↗</a>
+    </div>
+    <p class="disclaimer">CEI Labs — created by Ismael Rodriguez, with the support of Matthew Judge and CyberExperts.org. A personal open-source project.</p>
+  </div>
+</footer>
+
+<div class="banner">OPEN SOURCE // FIVE MODULES // PUBLIC BUILD</div>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

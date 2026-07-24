@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wargames — CEI Labs</title>
+<meta name="description" content="59 challenges across three tracks, validated fail-closed and deployed with one script.">
+<meta property="og:title" content="Wargames — CEI Labs">
+<meta property="og:description" content="59 challenges across three tracks, validated fail-closed and deployed with one script.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cei-labs.cyberexperts.org/wargames/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-module="wargames">
+
+<div class="banner">OPEN SOURCE // FAIL-CLOSED DEPLOY // PUBLIC BUILD</div>
+
+<nav class="nav" aria-label="Site">
+  <div class="wrap">
+    <a class="nav-brand" href="../index.html">CEI LABS</a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="navlinks">MENU</button>
+    <ul class="nav-links" id="navlinks">
+      <li><a href="../engine/index.html"><span class="n">01</span> ENGINE</a></li>
+      <li><a href="index.html" aria-current="page"><span class="n">02</span> WARGAMES</a></li>
+      <li><a href="../net/index.html"><span class="n">03</span> NET</a></li>
+      <li><a href="../event/index.html"><span class="n">04</span> EVENT</a></li>
+      <li><a href="../agent/index.html"><span class="n">05</span> AGENT</a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">SOURCE ↗</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap fid">
+    <i></i><i></i><i></i><i></i>
+    <div class="ghost" aria-hidden="true">02</div>
+    <div class="kicker">CEI-LABS // MODULE 02 — COURSE OF FIRE</div>
+    <h1>Wargames</h1>
+    <p class="sub">Fifty-nine challenges across three tracks — Bandit, Krypton, Natas — built on OverTheWire's wargames, validated fail-closed, and deployed into a running CTFd with one script.</p>
+    <div class="statstrip"><b>59 CHALLENGES</b><span class="dot">·</span><b>3 TRACKS</b><span class="dot">·</span><b>58 MAPPED ENVIRONMENTS</b><span class="dot">·</span><b>FAIL-CLOSED DEPLOY</b></div>
+    <div class="ctas">
+      <a class="cta" href="#tracks">EXPLORE THE TRACKS</a>
+      <a class="cta-2" href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">SOURCE ↗</a>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="sec" id="tracks">
+  <div class="wrap">
+    <div class="sec-label">SEC 01 / TRACKS</div>
+    <div class="tracks">
+      <div class="track fid"><i></i><i></i><i></i><i></i>
+        <h3>Bandit</h3>
+        <p>Unix/Linux fundamentals.</p>
+        <div class="counter"><div class="digits"><span>3</span><span>5</span></div><span class="lbl">LEVELS</span></div>
+        <ul class="doctrio">
+          <li><code>writeups.md</code> — instructor answer key. Not for participant distribution.</li>
+          <li><code>learning-objectives.md</code> — skills by concept, not level number.</li>
+          <li><code>cheatsheet.md</code> — fast lookup for instructors running a live room.</li>
+        </ul>
+      </div>
+      <div class="track fid"><i></i><i></i><i></i><i></i>
+        <h3>Krypton</h3>
+        <p>Cryptography.</p>
+        <div class="counter"><div class="digits"><span>0</span><span>8</span></div><span class="lbl">LEVELS</span></div>
+        <ul class="doctrio">
+          <li><code>writeups.md</code> — instructor answer key. Not for participant distribution.</li>
+          <li><code>learning-objectives.md</code> — skills by concept, not level number.</li>
+          <li><code>cheatsheet.md</code> — fast lookup for instructors running a live room.</li>
+        </ul>
+      </div>
+      <div class="track fid"><i></i><i></i><i></i><i></i>
+        <h3>Natas</h3>
+        <p>Server-side web security.</p>
+        <div class="counter"><div class="digits"><span>1</span><span>6</span></div><span class="lbl">LEVELS</span></div>
+        <ul class="doctrio">
+          <li><code>writeups.md</code> — instructor answer key. Not for participant distribution.</li>
+          <li><code>learning-objectives.md</code> — skills by concept, not level number.</li>
+          <li><code>cheatsheet.md</code> — fast lookup for instructors running a live room.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 02 / DEPLOY PIPELINE</div>
+    <div class="flow">
+      <div class="step">
+        <div class="k">01 / BUILD</div>
+        <p><code>build_bandit.py</code> · <code>build_krypton.py</code> · <code>build_natas.py</code></p>
+      </div>
+      <span class="arrow">→</span>
+      <div class="step">
+        <div class="k">02 / VALIDATE</div>
+        <p><code>validate_game_stages.py</code> · <code>validate_generated.py</code></p>
+      </div>
+      <span class="arrow">→</span>
+      <div class="step">
+        <div class="k">03 / DEPLOY</div>
+        <p><code>deploy.sh</code> with <code>CTFD_URL</code>, <code>CTFD_TOKEN</code>, <code>CTFD_SYNC_SECRET</code></p>
+      </div>
+    </div>
+    <p class="mt-l">The preflight is <strong>fail-closed</strong>. It requires authenticated CTFd inventory access, a successful challenge install/sync, a successful instance-launcher mapping sync, and exact totals — <strong>59 challenges, 58 mapped environments, 3 visible launchers</strong> — or the deploy stops. <code>.ctf/config</code> is written mode <code>0600</code>.</p>
+    <p class="mt">Loading content does not start a game clock — the administrator starts Bandit, Krypton, and Natas independently in Engine.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 03 / SUPPLY-CHAIN INTEGRITY</div>
+    <div class="cards">
+      <div class="card">
+        <div class="k">IMMUTABLE IMAGES</div>
+        <p>Production releases require <code>name@sha256:&lt;digest&gt;</code> image references. Release mode rejects <code>latest</code> and every floating tag.</p>
+      </div>
+      <div class="card">
+        <div class="k">CI GATE</div>
+        <p><code>validate.yml</code> runs the generation gate on every push and PR.</p>
+      </div>
+      <div class="card">
+        <div class="k">SBOM + PROVENANCE</div>
+        <p>The manually dispatched <code>build-targets.yml</code> requires an immutable Engine base-image digest and publishes SBOM and provenance metadata for all three target images.</p>
+      </div>
+      <div class="card">
+        <div class="k">PINNED ACTIONS</div>
+        <p>All third-party GitHub Actions pinned to commit SHAs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-label">SEC 04 / DOCUMENTATION ARSENAL</div>
+    <ul class="linkgrid">
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Facilitation runbook <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Troubleshooting FAQ <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Participant quick-start <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Learning-objectives index <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Instructor cheat-sheet index <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Wargame-building playbook <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Required network access <span class="ext">↗</span><span class="sub">Source of truth for cei-labs-net's firewall allowlist</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Self-hosted wargames status + blueprint <span class="ext">↗</span></a></li>
+      <li><a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">Staggered game-stage contract <span class="ext">↗</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="wrap">
+    <div class="sec-label">OTHER MODULES</div>
+    <div class="strip-grid">
+      <a class="tile" style="--mc:var(--m-engine)" href="../engine/index.html"><span class="des">MODULE 01 — RANGE PLATFORM</span><span class="nm">Engine</span><p>A modular, multi-tenant cyber range on bare-metal K3s.</p></a>
+      <a class="tile" style="--mc:var(--m-net)" href="../net/index.html"><span class="des">MODULE 03 — TERRAIN</span><span class="nm">Net</span><p>Built to survive 80 operators scanning it on purpose.</p></a>
+      <a class="tile" style="--mc:var(--m-event)" href="../event/index.html"><span class="des">MODULE 04 — THE OPERATION</span><span class="nm">Event</span><p>A full-scale, self-hosted CTF experience — 80 operators, 59 challenges.</p></a>
+      <a class="tile" style="--mc:var(--m-agent)" href="../agent/index.html"><span class="des">MODULE 05 — LOADOUT</span><span class="nm">Agent</span><p>A friendly CTF coaching AI that runs on your own laptop.</p></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <a href="https://github.com/stoptalkingishh/CEI-Labs-Wargames" rel="noopener">GITHUB ↗</a>
+      <span>LICENSE: SEE REPO</span>
+      <a href="https://cyberexperts.org" rel="noopener">CYBEREXPERTS.ORG ↗</a>
+    </div>
+    <p class="disclaimer">CEI Labs — created by Ismael Rodriguez, with the support of Matthew Judge and CyberExperts.org. A personal open-source project.</p>
+  </div>
+</footer>
+
+<div class="banner">OPEN SOURCE // FAIL-CLOSED DEPLOY // PUBLIC BUILD</div>
+
+<script src="../assets/site.js"></script>
+</body>
+</html>
