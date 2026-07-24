@@ -110,17 +110,70 @@ when first selected, never all upfront.
 measured 52% JSON-parse failure untuned; Ornith's smallest variant is 9B).
 `qwen3.6:*` (smallest dense 27B — too heavy for "most laptop CPUs").
 
-### Design implications for the UI / server
+### Per-model presets (context window + generation budget)
+
+Do **not** expose a single global context selector or raw `num_ctx` / `num_predict`
+fields. The same number means different things on different models — 16K context
+is cheap on the 1.7B and expensive on the 14B, and native context caps differ
+(`qwen3:4b` trains to 256K, `qwen3:8b` to ~40K). Instead, each model carries its
+own **named presets** that bundle both knobs into one human-readable choice.
+
+Two knobs, both per-model, both preset (never raw):
+
+- **`num_ctx`** — working memory. Matters because the agent *accumulates*
+  observations across turns (each `ssh_exec` result stays in context even after
+  truncation), so it needs headroom for a multi-level session, not just one turn.
+- **`num_predict`** — the per-turn output cap. Also the thinking-off enforcer: a
+  tight cap (~512–1024) physically can't fit a runaway `<think>` trace, so it's
+  belt-and-suspenders with the `/no_think` flag.
+
+**One preset per model by default; a second only when it earns its place; cap at
+two.** Three-plus is decision paralysis. A second preset must have a concrete reason:
+
+- **"Extended"** — larger `num_ctx` for note-heavy sessions (many levels tracked).
+  Real benefit, real RAM cost. Offer on mid/heavy tiers.
+- **"Reasoning"** — flips thinking *on* + raises `num_predict`, **only on big tiers
+  (8B/14B)** where the hardware can absorb the latency. This is the "budget as a
+  lever" escape hatch, packaged rather than ad-hoc.
+
+### RAM preflight gates presets, not just models
 
 - **RAM preflight** (`psutil`): read total & free RAM at startup, pre-select the
-  highest tier that fits, gray-out / warn on tiers that don't. This is what makes
-  "self-tune without understanding why" actually work.
-- **Dropdown labels show size + RAM**, e.g.
-  `Qwen3-4B — 2.5 GB download, needs ~4 GB free (recommended)`.
-- **Context-length selector** (`num_ctx`: 4096 / 8192 / 16384 / 32768) interacts
-  with RAM — bigger context costs memory; warn when chosen context × model would
-  exceed free RAM.
-- **Thinking-off enforced per model** in the registry.
+  highest tier that fits, and pre-select each model's default preset.
+- Because a preset encodes a *known* footprint (weights + KV cache at that
+  `num_ctx`), the server **gray-outs presets that won't fit measured free RAM** —
+  cleaner and more honest than a vague "your context might be too big" warning.
+- **Dropdown labels show the tradeoff in plain terms**, e.g.
+  `Qwen3-4B · Standard — needs ~4 GB free (recommended)` /
+  `Qwen3-4B · Extended — more notes, needs ~5.5 GB free`.
+- **Thinking-off enforced per model/preset** in the registry.
+
+**Registry shape** — derive candidate values from a RAM formula, allow per-model
+override:
+
+```python
+"qwen3:4b": {
+    "tier": "default",
+    "download_gb": 2.5, "min_ram_gb": 4, "native_max_ctx": 262144,
+    "presets": [
+        {"name": "Standard", "num_ctx": 8192,  "num_predict": 768, "think": False},
+        {"name": "Extended", "num_ctx": 16384, "num_predict": 768, "think": False},
+    ],
+    "default_preset": "Standard",
+},
+"qwen3:14b": {
+    "tier": "max", "download_gb": 9.3, "min_ram_gb": 11, "native_max_ctx": 40960,
+    "presets": [
+        {"name": "Standard",  "num_ctx": 8192,  "num_predict": 768,  "think": False},
+        {"name": "Reasoning", "num_ctx": 16384, "num_predict": 3072, "think": True},
+    ],
+    "default_preset": "Standard",
+},
+```
+
+**Build-time task:** pin each model's real `native_max_ctx` and rough
+KV-cache-per-token cost so preset values are defensible rather than eyeballed —
+a small measure/research step, not a blocker.
 
 ---
 
@@ -133,7 +186,7 @@ for Claude Design comes at the UI-build phase, not now.)
 server (FastAPI + plain HTML/JS, no heavy frontend build step) bound to
 localhost, then opens the participant's default browser to it. Same pattern as
 Open WebUI / text-generation-webui: trivially cross-platform, a natural home for
-the model/context dropdowns, no native-GUI packaging headaches.
+the model + preset dropdowns, no native-GUI packaging headaches.
 
 ## Packaging — "sets itself up"
 
@@ -175,8 +228,8 @@ CEI-Labs-Agent/
   src/cei_labs_agent/
     cli.py                     — entry point: launch web server, open browser
     server.py                  — FastAPI: chat endpoint, model/context selectors, SSH form, RAM preflight
-    config.py                  — local config (~/.cei-labs-agent/config.json): SSH creds, model, context length
-    models.py                  — NEW: curated model registry (tier, ollama tag, download, min RAM, thinking-capable flag)
+    config.py                  — local config (~/.cei-labs-agent/config.json): SSH creds, selected model + preset
+    models.py                  — NEW: curated model registry (tier, ollama tag, download, min RAM, native_max_ctx, per-model presets)
     model_source.py            — ModelSource impl vs Ollama's OpenAI-compatible endpoint; enforces thinking-off
     actions.py                 — forked from agentconnect-runtime, KNOWN_ACTIONS + "ssh_exec"
     graph.py                   — forked loop, ssh_exec wired in as a new gated tool
@@ -188,7 +241,7 @@ CEI-Labs-Agent/
     static/                    — minimal HTML/JS/CSS chat UI with model + context dropdowns
   tests/
     test_actions.py            — port existing tests, add ssh_exec cases (mocked)
-    test_models.py             — NEW: registry integrity, RAM-tier selection, thinking-off enforced
+    test_models.py             — NEW: registry integrity, preset validity (num_ctx ≤ native_max_ctx), RAM-tier/preset selection, thinking-off enforced
 ```
 
 ## Verification
