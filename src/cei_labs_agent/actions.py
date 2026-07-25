@@ -60,6 +60,45 @@ ACTION_SCHEMAS: dict[str, dict] = {
 }
 
 
+def action_format_schema() -> dict:
+    """Build a JSON schema for a single action, for constrained decoding.
+
+    Passed to Ollama's ``format`` field (structured outputs) so the model is
+    *grammar-constrained* to emit a valid JSON object whose ``action`` is one
+    of :data:`KNOWN_ACTIONS`, with only known argument keys and string values.
+    This deterministically removes the two most common small-model failure
+    modes -- unparseable JSON and unknown actions -- rather than relying on
+    :func:`parse_action` to recover from them after the fact.
+
+    The schema is intentionally *flat* (an ``action`` enum plus every possible
+    string argument as an optional property) rather than a per-action
+    discriminated union: the flat form converts to a grammar cleanly on every
+    llama.cpp/Ollama version, while the far rarer "right action, missing a
+    required arg" case is still caught by :func:`parse_action` and fed back as
+    an observation. Derived from :data:`ACTION_SCHEMAS` so new actions/args are
+    picked up automatically.
+
+    Returns:
+        A JSON-schema dict suitable for Ollama's ``format`` parameter.
+    """
+    arg_names: list[str] = []
+    for spec in ACTION_SCHEMAS.values():
+        for key in list(spec.get("required", [])) + list(spec.get("optional", [])):
+            if key not in arg_names:
+                arg_names.append(key)
+    properties: dict[str, dict] = {
+        "action": {"type": "string", "enum": sorted(KNOWN_ACTIONS)}
+    }
+    for name in arg_names:
+        properties[name] = {"type": "string"}
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": ["action"],
+        "additionalProperties": False,
+    }
+
+
 class Action(BaseModel):
     """A parsed, validated tool action.
 

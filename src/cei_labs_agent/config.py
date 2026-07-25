@@ -67,12 +67,18 @@ class RuntimeConfig(BaseModel):
         allow_notes: Whether the agent may read/write scratch notes.
         observation_max_chars: Maximum characters kept per tool observation.
         max_steps: Maximum number of agent steps before forced completion.
+        constrain_actions: When true, grammar-constrain each action turn to the
+            action JSON schema (Ollama structured outputs) so weak models can't
+            emit unparseable JSON. Automatically skipped on turns where the
+            preset enables thinking (the two are incompatible). Off falls back
+            to lenient post-hoc JSON extraction only.
     """
 
     allow_shell: bool = False
     allow_notes: bool = True
     observation_max_chars: int = 4000
     max_steps: int = 20
+    constrain_actions: bool = True
 
 
 class SSHConfig(BaseModel):
