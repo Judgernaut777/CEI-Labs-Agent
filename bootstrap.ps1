@@ -107,20 +107,42 @@ Test-DiskSpace
 # ---------------------------------------------------------------------------
 # 2. Install Ollama (local model runtime) if missing
 # ---------------------------------------------------------------------------
+# Structured-output `format` schema support landed in Ollama 0.5.0 (Dec 2024)
+# and the agent relies on it. Don't defer to whatever (possibly stale) Ollama a
+# participant may already have — upgrade past anything older than this.
+$MinOllama = [version]'0.5.0'
+
+function Get-OllamaVersion {
+    try {
+        $out = (& ollama --version 2>$null | Out-String)
+        if ($out -match '(\d+\.\d+\.\d+)') { return [version]$Matches[1] }
+    } catch { }
+    return $null
+}
+
 function Install-Ollama {
+    $isUpgrade = $false
     if (Test-Command 'ollama') {
-        Write-Ok 'Ollama is already installed.'
-        return
+        $ver = Get-OllamaVersion
+        if ($ver -and $ver -ge $MinOllama) {
+            Write-Ok "Ollama $ver is already current (>= $MinOllama)."
+            return
+        }
+        $shown = if ($ver) { "$ver" } else { '(unknown version)' }
+        Write-Warn2 "Found Ollama $shown, older than the required $MinOllama — upgrading to the latest so the agent's structured output works…"
+        $isUpgrade = $true
+    } else {
+        Write-Info 'Installing Ollama (this powers the local AI models)…'
     }
 
-    Write-Info 'Installing Ollama (this powers the local AI models)…'
-
-    # Prefer winget when available — cleanest per-user, silent path.
+    # Prefer winget when available — cleanest per-user, silent path. Use the
+    # matching verb so an existing old install is upgraded, not no-op'd.
     if (Test-Command 'winget') {
         try {
-            winget install --id Ollama.Ollama --accept-package-agreements --accept-source-agreements --silent --scope user
+            $verb = if ($isUpgrade) { 'upgrade' } else { 'install' }
+            winget $verb --id Ollama.Ollama --accept-package-agreements --accept-source-agreements --silent --scope user
             if ($LASTEXITCODE -eq 0) {
-                Write-Ok 'Ollama installed via winget.'
+                Write-Ok "Ollama $verb via winget."
                 Update-SessionPath
                 Add-SessionPath (Join-Path $env:LOCALAPPDATA 'Programs\Ollama')
                 return
