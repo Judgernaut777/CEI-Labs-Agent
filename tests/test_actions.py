@@ -2,12 +2,42 @@
 
 from __future__ import annotations
 
+import json
+
 from cei_labs_agent.actions import (
+    ACTION_SCHEMAS,
+    KNOWN_ACTIONS,
     Action,
     FinalAnswer,
     InvalidAction,
+    action_format_schema,
     parse_action,
 )
+
+
+def test_action_format_schema_shape() -> None:
+    """The constrained-decoding schema enumerates every known action and arg."""
+    schema = action_format_schema()
+    assert schema["type"] == "object"
+    assert schema["required"] == ["action"]
+    assert schema["additionalProperties"] is False
+    assert set(schema["properties"]["action"]["enum"]) == KNOWN_ACTIONS
+    # Every required/optional arg across all actions is an allowed string prop.
+    for spec in ACTION_SCHEMAS.values():
+        for arg in list(spec.get("required", [])) + list(spec.get("optional", [])):
+            assert schema["properties"][arg] == {"type": "string"}
+
+
+def test_action_format_schema_accepts_valid_actions() -> None:
+    """Each action's own example object validates against the flat schema."""
+    schema = action_format_schema()
+    allowed = set(schema["properties"])
+    for spec in ACTION_SCHEMAS.values():
+        example = spec["example"]
+        # Round-trips as JSON, action is enumerated, and no unknown keys.
+        obj = json.loads(json.dumps(example))
+        assert obj["action"] in schema["properties"]["action"]["enum"]
+        assert set(obj) <= allowed
 
 
 def test_clean_json_ssh_exec() -> None:

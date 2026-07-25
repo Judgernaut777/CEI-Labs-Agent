@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from .actions import Action, FinalAnswer, InvalidAction, parse_action
+from .actions import (
+    Action,
+    FinalAnswer,
+    InvalidAction,
+    action_format_schema,
+    parse_action,
+)
 from .config import RuntimeConfig, SSHConfig
 from .model_source import GenerateRequest, ModelSource
 from .state import AgentState
@@ -48,6 +54,13 @@ def stream_agent(
     st.add("user", user_message)
     last_assistant_text: str = ""
 
+    # Constrain each action turn to the action JSON schema, EXCEPT when the
+    # preset enables thinking: a thinking model must emit free-form <think>
+    # prose first, which a strict JSON grammar would forbid. So constrained
+    # decoding applies to exactly the (think=False) presets -- which is every
+    # small tier, the ones that actually need the reliability guarantee.
+    action_format = action_format_schema() if (runtime.constrain_actions and not think) else None
+
     while st.step < runtime.max_steps and not st.done:
         req = GenerateRequest(
             messages=st.as_messages(),
@@ -56,6 +69,7 @@ def stream_agent(
             num_predict=num_predict,
             think=think,
             temperature=0.3,
+            format=action_format,
         )
         try:
             reply = source.generate(req).text

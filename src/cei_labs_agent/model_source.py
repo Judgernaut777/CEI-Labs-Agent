@@ -28,6 +28,11 @@ class GenerateRequest(BaseModel):
         num_predict: Maximum number of tokens to generate.
         think: Whether to enable the model's thinking mode.
         temperature: Sampling temperature.
+        format: Optional JSON schema (or ``"json"``) passed to Ollama's
+            ``format`` field to grammar-constrain the output. ``None`` leaves
+            generation unconstrained. Must be ``None`` whenever ``think`` is
+            true -- a thinking model emits ``<think>`` prose that cannot
+            satisfy a strict JSON schema.
     """
 
     messages: list[dict]
@@ -36,6 +41,7 @@ class GenerateRequest(BaseModel):
     num_predict: int
     think: bool = False
     temperature: float = 0.3
+    format: dict | str | None = None
 
 
 class GenerateResponse(BaseModel):
@@ -97,6 +103,12 @@ class OllamaModelSource:
                 "temperature": req.temperature,
             },
         }
+        # Structured-output constraint: when a schema is supplied, Ollama
+        # grammar-constrains the decode so the reply is guaranteed to be a
+        # single valid JSON object matching it. Omitted entirely when None so
+        # unconstrained (e.g. thinking) generation is unaffected.
+        if req.format is not None:
+            body["format"] = req.format
         with httpx.Client(timeout=self.timeout) as client:
             resp = client.post(f"{self.host}/api/chat", json=body)
             resp.raise_for_status()

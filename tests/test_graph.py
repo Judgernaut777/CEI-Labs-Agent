@@ -121,6 +121,42 @@ def test_max_steps_cap(monkeypatch) -> None:
     assert final_events[-1]["text"] == scripted[1]
 
 
+def test_constrained_decoding_threaded_when_not_thinking(monkeypatch) -> None:
+    """With constrain_actions on and think off, every request carries the schema."""
+    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    source = StubModelSource([SSH_ACTION, FINISH_ACTION])
+    st = AgentState(system_prompt="sys")
+    run_agent("go", st, source, RuntimeConfig(), "qwen3:4b", 8192, 768, False, _ssh_cfg())
+
+    assert source.calls, "model was never called"
+    for req in source.calls:
+        assert isinstance(req.format, dict)
+        assert req.format["properties"]["action"]["enum"]  # the action schema
+
+
+def test_no_constraint_when_thinking(monkeypatch) -> None:
+    """A thinking preset (think=True) must NOT constrain -- <think> needs free text."""
+    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    source = StubModelSource([SSH_ACTION, FINISH_ACTION])
+    st = AgentState(system_prompt="sys")
+    run_agent("go", st, source, RuntimeConfig(), "qwen3:14b", 16384, 3072, True, _ssh_cfg())
+
+    assert all(req.format is None for req in source.calls)
+
+
+def test_no_constraint_when_disabled(monkeypatch) -> None:
+    """constrain_actions=False falls back to unconstrained generation."""
+    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    source = StubModelSource([SSH_ACTION, FINISH_ACTION])
+    st = AgentState(system_prompt="sys")
+    run_agent(
+        "go", st, source,
+        RuntimeConfig(constrain_actions=False),
+        "qwen3:4b", 8192, 768, False, _ssh_cfg(),
+    )
+    assert all(req.format is None for req in source.calls)
+
+
 def test_ssh_action_without_target_reports_no_target() -> None:
     """With no SSH target configured, ssh_exec observes a clear error."""
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
