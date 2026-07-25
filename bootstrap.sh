@@ -114,34 +114,73 @@ check_disk_space
 # ---------------------------------------------------------------------------
 # 2. Install Ollama (local model runtime) if missing
 # ---------------------------------------------------------------------------
-install_ollama() {
-  if have ollama; then
-    ok "Ollama is already installed ($(ollama --version 2>/dev/null | head -n1 || echo 'version unknown'))."
-    return 0
-  fi
+# Minimum Ollama the agent needs: structured-output `format` schema support
+# landed in Ollama 0.5.0 (Dec 2024) and the agent relies on it to
+# grammar-constrain each action turn. An older build silently ignores the
+# schema and the agent quietly runs at degraded reliability, so the event
+# tool must not defer to whatever (possibly stale) Ollama a participant may
+# already have — install if missing, upgrade if older, leave a current one be.
+MIN_OLLAMA="0.5.0"
 
-  info "Installing Ollama (this powers the local AI models)…"
+ollama_version() {
+  # Print the first x.y.z from `ollama --version`, or nothing if unparseable.
+  ollama --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1
+}
+
+# Exit 0 (true) when dotted version $1 is strictly LESS than $2. Uses awk so it
+# works without GNU `sort -V` (older macOS BSD sort lacks it).
+version_lt() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    na = split(a, x, "."); nb = split(b, y, ".");
+    n = (na > nb) ? na : nb;
+    for (i = 1; i <= n; i++) {
+      xi = (i <= na) ? x[i] + 0 : 0; yi = (i <= nb) ? y[i] + 0 : 0;
+      if (xi < yi) exit 0;
+      if (xi > yi) exit 1;
+    }
+    exit 1;
+  }'
+}
+
+_install_or_upgrade_ollama() {
+  # The official install paths all UPGRADE in place if Ollama is present.
   if [ "${PLATFORM}" = "macos" ] && have brew; then
-    # Prefer Homebrew on macOS when available — cleaner uninstall path.
-    if brew install ollama; then
+    if brew list ollama >/dev/null 2>&1; then
+      brew upgrade ollama && { ok "Ollama upgraded via Homebrew."; return 0; }
+    elif brew install ollama; then
       ok "Ollama installed via Homebrew."
       return 0
     fi
-    warn "Homebrew install failed; falling back to the official script."
+    warn "Homebrew path failed; falling back to the official script."
   fi
 
   if ! have curl; then
     die "curl is required to install Ollama but was not found. Install curl and re-run."
   fi
 
-  # The official one-line installer. Piping to sh is Ollama's documented method.
+  # The official one-line installer. Piping to sh is Ollama's documented
+  # method and it upgrades an existing install to the latest.
   if curl -fsSL https://ollama.com/install.sh | sh; then
-    ok "Ollama installed."
+    ok "Ollama installed/upgraded to the latest."
   else
     err "The Ollama installer did not complete successfully."
-    err "You can install it manually from https://ollama.com/download and then re-run this script."
-    die "Cannot continue without Ollama."
+    err "Install/upgrade manually from https://ollama.com/download and re-run this script."
+    die "Cannot continue without a current Ollama."
   fi
+}
+
+install_ollama() {
+  if have ollama; then
+    cur="$(ollama_version)"
+    if [ -n "${cur}" ] && ! version_lt "${cur}" "${MIN_OLLAMA}"; then
+      ok "Ollama ${cur} is already current (>= ${MIN_OLLAMA})."
+      return 0
+    fi
+    warn "Found Ollama ${cur:-'(unknown version)'}, older than the required ${MIN_OLLAMA} — upgrading to the latest so the agent's structured output works…"
+  else
+    info "Installing Ollama (this powers the local AI models)…"
+  fi
+  _install_or_upgrade_ollama
 }
 install_ollama
 
