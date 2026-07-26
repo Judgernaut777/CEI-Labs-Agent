@@ -7,7 +7,7 @@ observation back into history. Emits typed event dicts for streaming UIs.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from .actions import (
     Action,
@@ -33,6 +33,7 @@ def stream_agent(
     num_predict: int,
     think: bool,
     ssh: SSHConfig | None,
+    ssh_exec: Callable[..., str] | None = None,
 ) -> Iterator[dict]:
     """Run the agent loop, yielding typed events while mutating ``st``.
 
@@ -46,11 +47,16 @@ def stream_agent(
         num_predict: Max tokens to predict.
         think: Whether the model should emit a thinking block.
         ssh: SSH target for ``ssh_exec`` actions, or ``None``.
+        ssh_exec: Optional override for the SSH executor, called as
+            ``ssh_exec(ssh, command, max_chars, timeout) -> str``. Defaults to
+            the real tool; the eval harness injects a scripted responder here so
+            scenarios run without a live box.
 
     Yields:
         Event dicts with a ``type`` key: ``assistant``, ``action``,
         ``observation``, ``invalid``, ``final`` or ``error``.
     """
+    run_ssh_exec = ssh_exec or ssh_tools.ssh_exec
     st.add("user", user_message)
     last_assistant_text: str = ""
 
@@ -113,7 +119,7 @@ def stream_agent(
             if ssh is None:
                 obs = "ssh error: no target configured"
             else:
-                obs = ssh_tools.ssh_exec(
+                obs = run_ssh_exec(
                     ssh,
                     args["command"],
                     runtime.observation_max_chars,
@@ -148,6 +154,7 @@ def run_agent(
     num_predict: int,
     think: bool,
     ssh: SSHConfig | None,
+    ssh_exec: Callable[..., str] | None = None,
 ) -> AgentState:
     """Drain :func:`stream_agent` to completion and return the final state.
 
@@ -161,6 +168,7 @@ def run_agent(
         num_predict: Max tokens to predict.
         think: Whether the model should emit a thinking block.
         ssh: SSH target for ``ssh_exec`` actions, or ``None``.
+        ssh_exec: Optional SSH executor override (see :func:`stream_agent`).
 
     Returns:
         The mutated :class:`AgentState` after the loop terminates.
@@ -175,6 +183,7 @@ def run_agent(
         num_predict,
         think,
         ssh,
+        ssh_exec=ssh_exec,
     ):
         pass
     return st

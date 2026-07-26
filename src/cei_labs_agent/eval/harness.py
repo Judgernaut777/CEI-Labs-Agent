@@ -1,0 +1,164 @@
+"""Eval harness: run scenarios through the agent loop and score them.
+
+Metrics are deliberately mechanical and model-agnostic so they mean the same
+thing whether the model source is a real Ollama model or a scripted stub:
+
+  * ``action_validity`` -- fraction of turns whose raw reply parsed into a
+    valid, known action (including ``finish``). This is the number the
+    constrained-decoding change is meant to drive to ~1.0 on weak models; an
+    unconstrained small model scores well below it.
+  * ``completed`` -- the model chose to end (a ``finish`` action or a
+    free-form final answer) rather than hitting the step cap.
+  * ``flag_leaked`` -- the raw scenario flag appears verbatim in the final
+    summary. A good coach explains without pasting it, so this should be False.
+
+Each raw assistant reply is re-classified here with :func:`parse_action`, so
+scoring doesn't depend on the loop's event semantics.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+from ..actions import Action, FinalAnswer, InvalidAction, parse_action
+from ..config import RuntimeConfig, SSHConfig
+from ..graph import stream_agent
+from ..model_source import ModelSource
+from ..prompts import build_system_prompt
+from ..state import AgentState
+from .scenarios import Scenario
+
+
+class ScenarioResult(BaseModel):
+    """Per-scenario metrics."""
+
+    id: str
+    track: str
+    constrained: bool
+    turns: int
+    valid_actions: int
+    invalid_actions: int
+    free_answers: int
+    action_validity: float
+    completed: bool
+    flag_leaked: bool
+    error: str | None = None
+
+
+class SuiteResult(BaseModel):
+    """Aggregate over a scenario run."""
+
+    model: str
+    constrained: bool
+    scenarios: list[ScenarioResult]
+
+    @property
+    def mean_validity(self) -> float:
+        if not self.scenarios:
+            return 0.0
+        return sum(s.action_validity for s in self.scenarios) / len(self.scenarios)
+
+    @property
+    def completion_rate(self) -> float:
+        if not self.scenarios:
+            return 0.0
+        return sum(1 for s in self.scenarios if s.completed) / len(self.scenarios)
+
+    @property
+    def leak_count(self) -> int:
+        return sum(1 for s in self.scenarios if s.flag_leaked)
+
+
+def run_scenario(
+    scenario: Scenario,
+    source: ModelSource,
+    *,
+    model: str = "qwen3:4b",
+    num_ctx: int = 8192,
+    num_predict: int = 768,
+    think: bool = False,
+    constrain: bool = True,
+    max_steps: int = 12,
+) -> ScenarioResult:
+    """Run one scenario end to end and score it.
+
+    Args:
+        scenario: The scripted level to run.
+        source: The model source (Ollama for real runs, a stub for tests).
+        model: Model tag passed through to the request.
+        num_ctx, num_predict, think: Generation knobs (mirror a registry preset).
+        constrain: Whether to grammar-constrain actions (the A/B knob).
+        max_steps: Step cap for the run.
+
+    Returns:
+        A :class:`ScenarioResult`.
+    """
+    runtime = RuntimeConfig(constrain_actions=constrain, max_steps=max_steps)
+    ssh = SSHConfig(host="mock-box", port=22, username="player", password="x")
+    system_prompt = build_system_prompt(runtime, f"{ssh.username}@{ssh.host}:{ssh.port}")
+    st = AgentState(system_prompt=system_prompt, max_steps=max_steps)
+
+    replies: list[str] = []
+    error: str | None = None
+    responder = scenario.make_responder()
+    for event in stream_agent(
+        scenario.prompt, st, source, runtime, model,
+        num_ctx, num_predict, think, ssh, ssh_exec=responder,
+    ):
+        if event["type"] == "assistant":
+            replies.append(event["text"])
+        elif event["type"] == "error":
+            error = event["message"]
+
+    valid = invalid = free = finishes = 0
+    for reply in replies:
+        parsed = parse_action(reply)
+        if isinstance(parsed, Action):
+            valid += 1
+            if parsed.name == "finish":
+                finishes += 1
+        elif isinstance(parsed, InvalidAction):
+            invalid += 1
+        elif isinstance(parsed, FinalAnswer):
+            free += 1
+
+    turns = len(replies)
+    validity = valid / turns if turns else 1.0
+    result_text = st.result or ""
+    flag_leaked = bool(result_text) and scenario.flag.lower() in result_text.lower()
+
+    return ScenarioResult(
+        id=scenario.id,
+        track=scenario.track,
+        constrained=constrain,
+        turns=turns,
+        valid_actions=valid,
+        invalid_actions=invalid,
+        free_answers=free,
+        action_validity=round(validity, 3),
+        completed=(finishes > 0 or free > 0) and error is None,
+        flag_leaked=flag_leaked,
+        error=error,
+    )
+
+
+def run_suite(
+    scenarios: list[Scenario],
+    source: ModelSource,
+    *,
+    model: str = "qwen3:4b",
+    num_ctx: int = 8192,
+    num_predict: int = 768,
+    think: bool = False,
+    constrain: bool = True,
+    max_steps: int = 12,
+) -> SuiteResult:
+    """Run every scenario and aggregate the results."""
+    results = [
+        run_scenario(
+            sc, source, model=model, num_ctx=num_ctx, num_predict=num_predict,
+            think=think, constrain=constrain, max_steps=max_steps,
+        )
+        for sc in scenarios
+    ]
+    return SuiteResult(model=model, constrained=constrain, scenarios=results)
