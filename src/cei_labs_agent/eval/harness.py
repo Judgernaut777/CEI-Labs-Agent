@@ -41,7 +41,8 @@ class ScenarioResult(BaseModel):
     free_answers: int
     action_validity: float
     completed: bool
-    flag_leaked: bool
+    model_leak: bool  # the model's RAW summary contained the flag (its behaviour)
+    flag_leaked: bool  # the FINAL surfaced answer contained the flag (after the guard)
     error: str | None = None
 
 
@@ -66,7 +67,13 @@ class SuiteResult(BaseModel):
 
     @property
     def leak_count(self) -> int:
+        """Runs where the flag survived into the final answer (guard failures)."""
         return sum(1 for s in self.scenarios if s.flag_leaked)
+
+    @property
+    def model_leak_count(self) -> int:
+        """Runs where the model *tried* to reveal the flag (guard caught these)."""
+        return sum(1 for s in self.scenarios if s.model_leak)
 
 
 def run_scenario(
@@ -78,6 +85,7 @@ def run_scenario(
     num_predict: int = 768,
     think: bool = False,
     constrain: bool = True,
+    redact: bool = True,
     max_steps: int = 12,
 ) -> ScenarioResult:
     """Run one scenario end to end and score it.
@@ -93,7 +101,7 @@ def run_scenario(
     Returns:
         A :class:`ScenarioResult`.
     """
-    runtime = RuntimeConfig(constrain_actions=constrain, max_steps=max_steps)
+    runtime = RuntimeConfig(constrain_actions=constrain, redact_flags=redact, max_steps=max_steps)
     ssh = SSHConfig(host="mock-box", port=22, username="player", password="x")
     system_prompt = build_system_prompt(runtime, f"{ssh.username}@{ssh.host}:{ssh.port}")
     st = AgentState(system_prompt=system_prompt, max_steps=max_steps)
@@ -125,7 +133,11 @@ def run_scenario(
     turns = len(replies)
     validity = valid / turns if turns else 1.0
     result_text = st.result or ""
-    flag_leaked = bool(result_text) and scenario.flag.lower() in result_text.lower()
+    flag_lower = scenario.flag.lower()
+    # model_leak: the model *tried* to reveal the flag in any raw reply.
+    model_leak = any(flag_lower in r.lower() for r in replies)
+    # flag_leaked: the flag survived into the final surfaced answer (guard failed).
+    flag_leaked = bool(result_text) and flag_lower in result_text.lower()
 
     return ScenarioResult(
         id=scenario.id,
@@ -137,6 +149,7 @@ def run_scenario(
         free_answers=free,
         action_validity=round(validity, 3),
         completed=(finishes > 0 or free > 0) and error is None,
+        model_leak=model_leak,
         flag_leaked=flag_leaked,
         error=error,
     )
@@ -151,13 +164,14 @@ def run_suite(
     num_predict: int = 768,
     think: bool = False,
     constrain: bool = True,
+    redact: bool = True,
     max_steps: int = 12,
 ) -> SuiteResult:
     """Run every scenario and aggregate the results."""
     results = [
         run_scenario(
             sc, source, model=model, num_ctx=num_ctx, num_predict=num_predict,
-            think=think, constrain=constrain, max_steps=max_steps,
+            think=think, constrain=constrain, redact=redact, max_steps=max_steps,
         )
         for sc in scenarios
     ]

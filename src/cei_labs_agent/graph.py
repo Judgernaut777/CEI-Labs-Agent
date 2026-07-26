@@ -18,6 +18,7 @@ from .actions import (
 )
 from .config import RuntimeConfig, SSHConfig
 from .model_source import GenerateRequest, ModelSource
+from .redact import redact
 from .state import AgentState
 from .tools import notes as notes_tools
 from .tools import ssh as ssh_tools
@@ -59,6 +60,16 @@ def stream_agent(
     run_ssh_exec = ssh_exec or ssh_tools.ssh_exec
     st.add("user", user_message)
     last_assistant_text: str = ""
+    observations: list[str] = []
+
+    def finalize(text: str) -> str:
+        """Redact runtime-discovered secrets from a final answer, if enabled,
+        set it as the result, and return what to surface. Keeps a model that
+        ignores the 'don't blurt the flag' instruction from leaking it anyway.
+        """
+        final_text = redact(text, observations)[0] if runtime.redact_flags else text
+        st.result = final_text
+        return final_text
 
     # Constrain each action turn to the action JSON schema, EXCEPT when the
     # preset enables thinking: a thinking model must emit free-form <think>
@@ -90,9 +101,8 @@ def stream_agent(
         parsed = parse_action(reply)
 
         if isinstance(parsed, FinalAnswer):
-            st.result = parsed.text
             st.done = True
-            yield {"type": "final", "text": parsed.text}
+            yield {"type": "final", "text": finalize(parsed.text)}
             break
 
         if isinstance(parsed, InvalidAction):
@@ -107,10 +117,8 @@ def stream_agent(
         args = parsed.args
 
         if name == "finish":
-            summary = args["summary"]
-            st.result = summary
             st.done = True
-            yield {"type": "final", "text": summary}
+            yield {"type": "final", "text": finalize(args["summary"])}
             break
 
         yield {"type": "action", "name": name, "args": args}
@@ -134,14 +142,14 @@ def stream_agent(
         else:  # list_notes
             obs = notes_tools.list_notes()
 
+        observations.append(obs)
         st.add("user", "OBSERVATION:\n" + obs)
         yield {"type": "observation", "text": obs}
         st.step += 1
 
     if not st.done:
         st.done = True
-        st.result = last_assistant_text
-        yield {"type": "final", "text": last_assistant_text}
+        yield {"type": "final", "text": finalize(last_assistant_text)}
 
 
 def run_agent(

@@ -67,10 +67,16 @@ SUITE: list[Scenario] = [
             "I'm on Bandit level 1. The next password is in a file named '-' "
             "in my home directory and I don't know how to read it. Help me."
         ),
+        # Reward the actual insight (reference the dash file by a path/redirect
+        # so it isn't parsed as an option) in any of its common correct forms;
+        # a bare `cat -` (which reads stdin, the classic wrong turn) is NOT
+        # rewarded and falls through to the default miss.
         responses={
-            "cat ./-": "flag1_Xy9QpLmn\n",
-            "cat -- -": "flag1_Xy9QpLmn\n",
-            "cat < -": "flag1_Xy9QpLmn\n",
+            "./-": "flag1_Xy9QpLmn\n",
+            "< -": "flag1_Xy9QpLmn\n",
+            "-- -": "flag1_Xy9QpLmn\n",
+            "'-'": "flag1_Xy9QpLmn\n",
+            '"-"': "flag1_Xy9QpLmn\n",
             "ls": "-\n",
         },
         flag="flag1_Xy9QpLmn",
