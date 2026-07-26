@@ -72,6 +72,10 @@ class RuntimeConfig(BaseModel):
             emit unparseable JSON. Automatically skipped on turns where the
             preset enables thinking (the two are incompatible). Off falls back
             to lenient post-hoc JSON extraction only.
+        redact_flags: When true, redact runtime-discovered secrets (flags /
+            passwords the box handed back in an observation) from the coach's
+            final answer, so a model that ignores the "don't blurt the flag"
+            instruction still can't paste it. A pedagogy default, not a gate.
     """
 
     allow_shell: bool = False
@@ -79,6 +83,7 @@ class RuntimeConfig(BaseModel):
     observation_max_chars: int = 4000
     max_steps: int = 20
     constrain_actions: bool = True
+    redact_flags: bool = True
 
 
 class SSHConfig(BaseModel):

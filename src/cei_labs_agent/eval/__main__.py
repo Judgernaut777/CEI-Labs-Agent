@@ -32,17 +32,20 @@ def _preset_knobs(model: str) -> tuple[int, int, bool]:
 def _print_suite(res: SuiteResult) -> None:
     tag = "constrained" if res.constrained else "unconstrained"
     print(f"\n== {res.model}  [{tag}] ==")
-    print(f"{'scenario':<14}{'validity':>10}{'valid/inv/free':>18}{'done':>7}{'leak':>7}")
+    print(f"{'scenario':<14}{'validity':>10}{'valid/inv/free':>18}{'done':>7}{'leak(raw>final)':>17}")
     for s in res.scenarios:
         vif = f"{s.valid_actions}/{s.invalid_actions}/{s.free_answers}"
+        # raw = the model tried to reveal the flag; final = it survived the guard.
+        leak = f"{'tried' if s.model_leak else '-'}>{'LEAK' if s.flag_leaked else 'ok'}"
         print(
             f"{s.id:<14}{s.action_validity:>10.2f}{vif:>18}"
-            f"{('yes' if s.completed else 'no'):>7}{('LEAK' if s.flag_leaked else 'ok'):>7}"
+            f"{('yes' if s.completed else 'no'):>7}{leak:>17}"
             + (f"   ERROR: {s.error}" if s.error else "")
         )
     print(
-        f"{'MEAN':<14}{res.mean_validity:>10.2f}"
-        f"{'':>18}{f'{res.completion_rate:.0%}':>7}{res.leak_count:>7}"
+        f"{'MEAN':<14}{res.mean_validity:>10.2f}{'':>18}"
+        f"{f'{res.completion_rate:.0%}':>7}"
+        f"{f'{res.model_leak_count}>{res.leak_count}':>17}"
     )
 
 
