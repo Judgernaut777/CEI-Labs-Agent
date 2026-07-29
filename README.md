@@ -186,6 +186,27 @@ channel and loaner laptops are there for anything the guide doesn't fix.
 
 ---
 
+## Verifying your setup (for the "AI Copilot Setup" CTF track)
+
+If you're doing the CEI Labs CTF's **AI Copilot Setup** challenges, a separate
+command checks your progress and prints the flag for each milestone you've
+actually completed — installing correctly, running, connected to your box,
+and so on:
+
+```sh
+ctf-agent-verify --host <your-challenge-host> --port <port> --user <username> --password <password> --prompt "Help me with Bandit level 1"
+```
+
+It's included automatically by the same one-line installer above. Run it
+with no arguments any time to see which of the five checks still need
+doing — each line tells you exactly what's missing. The `--prompt` value is
+the same kind of message you'd type into the agent itself to ask for help
+(see [Using it — the short version](#using-it--the-short-version) above);
+any track/level works, it just needs to actually ask for help about a real
+level.
+
+---
+
 ## For the curious (how it works under the hood)
 
 A small local AI model (served by Ollama) drives a plain, transparent
