@@ -76,6 +76,13 @@ class RuntimeConfig(BaseModel):
             passwords the box handed back in an observation) from the coach's
             final answer, so a model that ignores the "don't blurt the flag"
             instruction still can't paste it. A pedagogy default, not a gate.
+        max_seconds: Wall-clock budget for a single agent run (one user
+            message), in seconds. Exceeding it ends the turn gracefully with
+            a "where I got to" final rather than grinding forever on a slow
+            laptop CPU.
+        max_total_chars: Total output budget for one run, in characters of
+            model replies summed across turns (a cheap token proxy — there is
+            no tokenizer in the loop). Exceeding it ends the turn gracefully.
     """
 
     allow_shell: bool = False
@@ -84,6 +91,8 @@ class RuntimeConfig(BaseModel):
     max_steps: int = 20
     constrain_actions: bool = True
     redact_flags: bool = True
+    max_seconds: float = 300.0
+    max_total_chars: int = 60_000
 
 
 class SSHConfig(BaseModel):

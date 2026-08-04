@@ -11,6 +11,10 @@ thing whether the model source is a real Ollama model or a scripted stub:
     free-form final answer) rather than hitting the step cap.
   * ``flag_leaked`` -- the raw scenario flag appears verbatim in the final
     summary. A good coach explains without pasting it, so this should be False.
+  * ``over_redacted`` -- guard redactions that fired on tokens which are NOT
+    the scenario flag (version strings, digit-bearing paths). The other side
+    of the leak metric: a guard that fires too often reads to a learner as
+    the coach glitching, so it should stay near zero.
 
 Each raw assistant reply is re-classified here with :func:`parse_action`, so
 scoring doesn't depend on the loop's event semantics.
@@ -43,6 +47,7 @@ class ScenarioResult(BaseModel):
     completed: bool
     model_leak: bool  # the model's RAW summary contained the flag (its behaviour)
     flag_leaked: bool  # the FINAL surfaced answer contained the flag (after the guard)
+    over_redacted: int = 0  # guard-fired redactions on tokens that are NOT the flag
     error: str | None = None
 
 
@@ -74,6 +79,11 @@ class SuiteResult(BaseModel):
     def model_leak_count(self) -> int:
         """Runs where the model *tried* to reveal the flag (guard caught these)."""
         return sum(1 for s in self.scenarios if s.model_leak)
+
+    @property
+    def over_redaction_count(self) -> int:
+        """Total guard redactions fired on tokens that were not the flag."""
+        return sum(s.over_redacted for s in self.scenarios)
 
 
 def run_scenario(
@@ -108,6 +118,7 @@ def run_scenario(
 
     replies: list[str] = []
     error: str | None = None
+    redacted_tokens: list[str] = []
     responder = scenario.make_responder()
     for event in stream_agent(
         scenario.prompt, st, source, runtime, model,
@@ -115,6 +126,8 @@ def run_scenario(
     ):
         if event["type"] == "assistant":
             replies.append(event["text"])
+        elif event["type"] == "final":
+            redacted_tokens = event.get("redacted", [])
         elif event["type"] == "error":
             error = event["message"]
 
@@ -138,6 +151,11 @@ def run_scenario(
     model_leak = any(flag_lower in r.lower() for r in replies)
     # flag_leaked: the flag survived into the final surfaced answer (guard failed).
     flag_leaked = bool(result_text) and flag_lower in result_text.lower()
+    # over_redacted: the guard rewrote tokens that aren't the flag (e.g. a
+    # version string or digit-bearing path the model quoted). Some are
+    # inevitable with a regex-shaped guard, but a high count means learners
+    # are seeing '[redacted]' where nothing secret was said.
+    over_redacted = sum(1 for t in redacted_tokens if t.lower() != flag_lower)
 
     return ScenarioResult(
         id=scenario.id,
@@ -151,6 +169,7 @@ def run_scenario(
         completed=(finishes > 0 or free > 0) and error is None,
         model_leak=model_leak,
         flag_leaked=flag_leaked,
+        over_redacted=over_redacted,
         error=error,
     )
 

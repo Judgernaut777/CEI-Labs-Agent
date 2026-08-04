@@ -178,3 +178,57 @@ def test_ssh_action_without_target_reports_no_target() -> None:
     assert observation_events[0]["text"] == "ssh error: no target configured"
     assert st.done is True
     assert st.result == FINISH_SUMMARY
+
+
+def test_output_budget_ends_turn_gracefully() -> None:
+    """A run that blows the output budget finalizes with a budget note."""
+    source = StubModelSource([
+        '{"action":"list_notes"}' + "x" * 5000,
+        '{"action":"list_notes"}' + "y" * 5000,
+    ])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(max_total_chars=100),
+            "qwen3:4b", 8192, 768, False, None,
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals and "output budget" in finals[0]["text"]
+    assert "redacted" in finals[0]
+
+
+def test_time_budget_ends_turn_gracefully() -> None:
+    """A run past the wall-clock budget finalizes with a time-budget note."""
+    source = StubModelSource(['{"action":"list_notes"}'])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(max_seconds=-1),  # already expired
+            "qwen3:4b", 8192, 768, False, None,
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals and "time budget" in finals[0]["text"]
+
+
+def test_final_event_reports_redacted_tokens() -> None:
+    """The final event names which tokens the guard rewrote."""
+    replies = [
+        '{"action":"ssh_exec","command":"cat pass"}',
+        '{"action":"finish","summary":"the flag is a1b2c3d4, explained well"}',
+    ]
+    source = StubModelSource(replies)
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "go",
+            st, source, RuntimeConfig(), "qwen3:4b", 8192, 768, False,
+            _ssh_cfg(), ssh_exec=lambda *a, **k: "password: a1b2c3d4",
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals[0]["redacted"] == ["a1b2c3d4"]
+    assert "a1b2c3d4" not in finals[0]["text"]

@@ -7,6 +7,7 @@ observation back into history. Emits typed event dicts for streaming UIs.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Iterator
 
 from .actions import (
@@ -18,7 +19,7 @@ from .actions import (
 )
 from .config import RuntimeConfig, SSHConfig
 from .model_source import GenerateRequest, ModelSource
-from .redact import redact
+from .redact import redact_detail
 from .state import AgentState
 from .tools import notes as notes_tools
 from .tools import ssh as ssh_tools
@@ -61,15 +62,23 @@ def stream_agent(
     st.add("user", user_message)
     last_assistant_text: str = ""
     observations: list[str] = []
+    started = time.monotonic()
+    spent_chars = 0  # reply characters as a cheap token proxy (no tokenizer here)
+    budget_note: str = ""
 
-    def finalize(text: str) -> str:
+    def finalize(text: str) -> tuple[str, list[str]]:
         """Redact runtime-discovered secrets from a final answer, if enabled,
-        set it as the result, and return what to surface. Keeps a model that
-        ignores the 'don't blurt the flag' instruction from leaking it anyway.
+        set it as the result, and return what to surface plus which tokens the
+        guard rewrote. Keeps a model that ignores the 'don't blurt the flag'
+        instruction from leaking it anyway. The redacted-token list lets the
+        eval harness measure over-redaction instead of guessing.
         """
-        final_text = redact(text, observations)[0] if runtime.redact_flags else text
+        if runtime.redact_flags:
+            final_text, fired = redact_detail(text, observations)
+        else:
+            final_text, fired = text, []
         st.result = final_text
-        return final_text
+        return final_text, fired
 
     # Constrain each action turn to the action JSON schema, EXCEPT when the
     # preset enables thinking: a thinking model must emit free-form <think>
@@ -79,6 +88,22 @@ def stream_agent(
     action_format = action_format_schema() if (runtime.constrain_actions and not think) else None
 
     while st.step < runtime.max_steps and not st.done:
+        # Budget guards beyond the step cap: wall-clock and a total-output
+        # budget. max_steps alone doesn't stop a fast model from burning
+        # minutes (or a slow one from grinding for an hour on a laptop CPU);
+        # on event day an unbounded loop is a resource leak on a shared box.
+        if time.monotonic() - started > runtime.max_seconds:
+            budget_note = (
+                f"(Stopped: exceeded the {runtime.max_seconds:.0f}s time budget "
+                "for this turn — here's where I got to; ask me to continue.)"
+            )
+            break
+        if spent_chars > runtime.max_total_chars:
+            budget_note = (
+                "(Stopped: used up this turn's output budget — here's where I "
+                "got to; ask me to continue.)"
+            )
+            break
         req = GenerateRequest(
             messages=st.as_messages(),
             model=model,
@@ -97,12 +122,14 @@ def stream_agent(
         last_assistant_text = reply
         st.add("assistant", reply)
         yield {"type": "assistant", "text": reply}
+        spent_chars += len(reply)
 
         parsed = parse_action(reply)
 
         if isinstance(parsed, FinalAnswer):
             st.done = True
-            yield {"type": "final", "text": finalize(parsed.text)}
+            text, fired = finalize(parsed.text)
+            yield {"type": "final", "text": text, "redacted": fired}
             break
 
         if isinstance(parsed, InvalidAction):
@@ -118,7 +145,8 @@ def stream_agent(
 
         if name == "finish":
             st.done = True
-            yield {"type": "final", "text": finalize(args["summary"])}
+            text, fired = finalize(args["summary"])
+            yield {"type": "final", "text": text, "redacted": fired}
             break
 
         yield {"type": "action", "name": name, "args": args}
@@ -149,7 +177,11 @@ def stream_agent(
 
     if not st.done:
         st.done = True
-        yield {"type": "final", "text": finalize(last_assistant_text)}
+        text, fired = finalize(last_assistant_text)
+        if budget_note:
+            text = f"{budget_note}\n\n{text}"
+            st.result = text
+        yield {"type": "final", "text": text, "redacted": fired}
 
 
 def run_agent(
