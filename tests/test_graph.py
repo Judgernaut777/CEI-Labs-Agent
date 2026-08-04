@@ -179,7 +179,6 @@ def test_ssh_action_without_target_reports_no_target() -> None:
     assert st.done is True
     assert st.result == FINISH_SUMMARY
 
-
 def test_blocked_command_never_reaches_ssh(monkeypatch) -> None:
     """A destructive ssh_exec is refused by the guard without touching SSH."""
     calls: list = []
