@@ -79,6 +79,13 @@ class RuntimeConfig(BaseModel):
         guard_shell: When true, run each ssh_exec command through the
             destructive-command denylist (:mod:`.guard`) before it touches the
             box. A speed bump against catastrophic commands, not a sandbox.
+        max_seconds: Wall-clock budget for a single agent run (one user
+            message), in seconds. Exceeding it ends the turn gracefully with
+            a "where I got to" final rather than grinding forever on a slow
+            laptop CPU.
+        max_total_chars: Total output budget for one run, in characters of
+            model replies summed across turns (a cheap token proxy — there is
+            no tokenizer in the loop). Exceeding it ends the turn gracefully.
     """
 
     allow_shell: bool = False
@@ -88,6 +95,8 @@ class RuntimeConfig(BaseModel):
     constrain_actions: bool = True
     redact_flags: bool = True
     guard_shell: bool = True
+    max_seconds: float = 300.0
+    max_total_chars: int = 60_000
 
 
 class SSHConfig(BaseModel):

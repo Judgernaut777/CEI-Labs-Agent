@@ -36,6 +36,27 @@ def observation_secrets(observations: list[str]) -> set[str]:
     return {tok for tok in _TOKEN_RE.findall(blob) if _looks_secret(tok)}
 
 
+def redact_detail(text: str, observations: list[str]) -> tuple[str, list[str]]:
+    """Redact observation-derived secrets from ``text``, reporting what fired.
+
+    Same rules as :func:`redact`, but also returns the sorted list of tokens
+    that were actually replaced. The eval harness uses this to measure
+    *over*-redaction — the guard firing on tokens that aren't the scenario
+    flag (version strings, digit-bearing paths), which reads to a learner as
+    the coach glitching rather than teaching.
+    """
+    secrets = observation_secrets(observations)
+    if not secrets:
+        return text, []
+    out = text
+    fired: list[str] = []
+    for secret in sorted(secrets, key=len, reverse=True):
+        if secret in out:
+            out = out.replace(secret, PLACEHOLDER)
+            fired.append(secret)
+    return out, fired
+
+
 def redact(text: str, observations: list[str]) -> tuple[str, bool]:
     """Redact observation-derived secrets from ``text``.
 
@@ -50,11 +71,5 @@ def redact(text: str, observations: list[str]) -> tuple[str, bool]:
         shorter one isn't partially rewritten. ``changed`` is True iff anything
         was redacted.
     """
-    secrets = observation_secrets(observations)
-    if not secrets:
-        return text, False
-    out = text
-    for secret in sorted(secrets, key=len, reverse=True):
-        if secret in out:
-            out = out.replace(secret, PLACEHOLDER)
-    return out, out != text
+    out, fired = redact_detail(text, observations)
+    return out, bool(fired)
