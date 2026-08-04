@@ -179,12 +179,11 @@ def test_ssh_action_without_target_reports_no_target() -> None:
     assert st.done is True
     assert st.result == FINISH_SUMMARY
 
-
 def test_blocked_command_never_reaches_ssh(monkeypatch) -> None:
     """A destructive ssh_exec is refused by the guard without touching SSH."""
     calls: list = []
     monkeypatch.setattr(
-        ssh_mod, "ssh_exec",
+        ssh_mod, "session_exec",
         lambda *a, **k: calls.append(a) or "SHOULD_NOT_HAPPEN",
     )
 
@@ -203,7 +202,7 @@ def test_blocked_command_never_reaches_ssh(monkeypatch) -> None:
 
 def test_guard_disabled_by_runtime_toggle(monkeypatch) -> None:
     """runtime.guard_shell=False lets even destructive commands through."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "EXECUTED")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "EXECUTED")
     source = StubModelSource(['{"action":"ssh_exec","command":"rm -rf /"}', FINISH_ACTION])
     st = AgentState(system_prompt="sys")
     events = list(
@@ -215,3 +214,57 @@ def test_guard_disabled_by_runtime_toggle(monkeypatch) -> None:
     )
     obs = [e for e in events if e["type"] == "observation"]
     assert obs and obs[0]["text"] == "EXECUTED"
+
+
+def test_output_budget_ends_turn_gracefully() -> None:
+    """A run that blows the output budget finalizes with a budget note."""
+    source = StubModelSource([
+        '{"action":"list_notes"}' + "x" * 5000,
+        '{"action":"list_notes"}' + "y" * 5000,
+    ])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(max_total_chars=100),
+            "qwen3:4b", 8192, 768, False, None,
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals and "output budget" in finals[0]["text"]
+    assert "redacted" in finals[0]
+
+
+def test_time_budget_ends_turn_gracefully() -> None:
+    """A run past the wall-clock budget finalizes with a time-budget note."""
+    source = StubModelSource(['{"action":"list_notes"}'])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(max_seconds=-1),  # already expired
+            "qwen3:4b", 8192, 768, False, None,
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals and "time budget" in finals[0]["text"]
+
+
+def test_final_event_reports_redacted_tokens() -> None:
+    """The final event names which tokens the guard rewrote."""
+    replies = iter([
+        '{"action":"ssh_exec","command":"cat pass"}',
+        '{"action":"finish","summary":"the flag is a1b2c3d4, explained well"}',
+    ])
+    source = StubModelSource(list(replies))
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "go",
+            st, source, RuntimeConfig(), "qwen3:4b", 8192, 768, False,
+            _ssh_cfg(), ssh_exec=lambda *a, **k: "password: a1b2c3d4",
+        )
+    )
+    finals = [e for e in events if e["type"] == "final"]
+    assert finals[0]["redacted"] == ["a1b2c3d4"]
+    assert "a1b2c3d4" not in finals[0]["text"]
