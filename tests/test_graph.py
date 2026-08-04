@@ -25,7 +25,7 @@ def _ssh_cfg() -> SSHConfig:
 
 def test_ssh_then_finish_feeds_observation_back(monkeypatch) -> None:
     """An ssh_exec action's observation is fed back before the finish."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "FIXED_OBS")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "FIXED_OBS")
 
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
     st = AgentState(system_prompt="sys")
@@ -66,7 +66,7 @@ def test_ssh_then_finish_feeds_observation_back(monkeypatch) -> None:
 
 def test_run_agent_returns_completed_state(monkeypatch) -> None:
     """run_agent drains the loop and returns the same, completed state."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "FIXED_OBS")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "FIXED_OBS")
 
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
     st = AgentState(system_prompt="sys")
@@ -88,7 +88,7 @@ def test_run_agent_returns_completed_state(monkeypatch) -> None:
 
 def test_max_steps_cap(monkeypatch) -> None:
     """When the model never finishes, the loop caps at max_steps."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "obs")
 
     scripted = [
         '{"action":"ssh_exec","command":"cmd0"}',
@@ -123,7 +123,7 @@ def test_max_steps_cap(monkeypatch) -> None:
 
 def test_constrained_decoding_threaded_when_not_thinking(monkeypatch) -> None:
     """With constrain_actions on and think off, every request carries the schema."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "obs")
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
     st = AgentState(system_prompt="sys")
     run_agent("go", st, source, RuntimeConfig(), "qwen3:4b", 8192, 768, False, _ssh_cfg())
@@ -136,7 +136,7 @@ def test_constrained_decoding_threaded_when_not_thinking(monkeypatch) -> None:
 
 def test_no_constraint_when_thinking(monkeypatch) -> None:
     """A thinking preset (think=True) must NOT constrain -- <think> needs free text."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "obs")
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
     st = AgentState(system_prompt="sys")
     run_agent("go", st, source, RuntimeConfig(), "qwen3:14b", 16384, 3072, True, _ssh_cfg())
@@ -146,7 +146,7 @@ def test_no_constraint_when_thinking(monkeypatch) -> None:
 
 def test_no_constraint_when_disabled(monkeypatch) -> None:
     """constrain_actions=False falls back to unconstrained generation."""
-    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "obs")
+    monkeypatch.setattr(ssh_mod, "session_exec", lambda *a, **k: "obs")
     source = StubModelSource([SSH_ACTION, FINISH_ACTION])
     st = AgentState(system_prompt="sys")
     run_agent(
