@@ -11,10 +11,6 @@ thing whether the model source is a real Ollama model or a scripted stub:
     free-form final answer) rather than hitting the step cap.
   * ``flag_leaked`` -- the raw scenario flag appears verbatim in the final
     summary. A good coach explains without pasting it, so this should be False.
-  * ``over_redacted`` -- guard redactions that fired on tokens which are NOT
-    the scenario flag (version strings, digit-bearing paths). The other side
-    of the leak metric: a guard that fires too often reads to a learner as
-    the coach glitching, so it should stay near zero.
 
 Each raw assistant reply is re-classified here with :func:`parse_action`, so
 scoring doesn't depend on the loop's event semantics.
