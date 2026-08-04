@@ -18,6 +18,7 @@ from .actions import (
     parse_action,
 )
 from .config import RuntimeConfig, SSHConfig
+from .guard import blocked_observation, check_command
 from .model_source import GenerateRequest, ModelSource
 from .redact import redact_detail
 from .state import AgentState
@@ -58,7 +59,7 @@ def stream_agent(
         Event dicts with a ``type`` key: ``assistant``, ``action``,
         ``observation``, ``invalid``, ``final`` or ``error``.
     """
-    run_ssh_exec = ssh_exec or ssh_tools.ssh_exec
+    run_ssh_exec = ssh_exec or ssh_tools.session_exec
     st.add("user", user_message)
     last_assistant_text: str = ""
     observations: list[str] = []
@@ -154,6 +155,8 @@ def stream_agent(
         if name == "ssh_exec":
             if ssh is None:
                 obs = "ssh error: no target configured"
+            elif runtime.guard_shell and (reason := check_command(args["command"])):
+                obs = blocked_observation(args["command"], reason)
             else:
                 obs = run_ssh_exec(
                     ssh,

@@ -76,6 +76,9 @@ class RuntimeConfig(BaseModel):
             passwords the box handed back in an observation) from the coach's
             final answer, so a model that ignores the "don't blurt the flag"
             instruction still can't paste it. A pedagogy default, not a gate.
+        guard_shell: When true, run each ssh_exec command through the
+            destructive-command denylist (:mod:`.guard`) before it touches the
+            box. A speed bump against catastrophic commands, not a sandbox.
         max_seconds: Wall-clock budget for a single agent run (one user
             message), in seconds. Exceeding it ends the turn gracefully with
             a "where I got to" final rather than grinding forever on a slow
@@ -91,6 +94,7 @@ class RuntimeConfig(BaseModel):
     max_steps: int = 20
     constrain_actions: bool = True
     redact_flags: bool = True
+    guard_shell: bool = True
     max_seconds: float = 300.0
     max_total_chars: int = 60_000
 
