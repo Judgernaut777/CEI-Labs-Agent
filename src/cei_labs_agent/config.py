@@ -76,6 +76,9 @@ class RuntimeConfig(BaseModel):
             passwords the box handed back in an observation) from the coach's
             final answer, so a model that ignores the "don't blurt the flag"
             instruction still can't paste it. A pedagogy default, not a gate.
+        guard_shell: When true, run each ssh_exec command through the
+            destructive-command denylist (:mod:`.guard`) before it touches the
+            box. A speed bump against catastrophic commands, not a sandbox.
     """
 
     allow_shell: bool = False
@@ -84,6 +87,7 @@ class RuntimeConfig(BaseModel):
     max_steps: int = 20
     constrain_actions: bool = True
     redact_flags: bool = True
+    guard_shell: bool = True
 
 
 class SSHConfig(BaseModel):

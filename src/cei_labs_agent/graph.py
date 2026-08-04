@@ -17,6 +17,7 @@ from .actions import (
     parse_action,
 )
 from .config import RuntimeConfig, SSHConfig
+from .guard import blocked_observation, check_command
 from .model_source import GenerateRequest, ModelSource
 from .redact import redact
 from .state import AgentState
@@ -126,6 +127,8 @@ def stream_agent(
         if name == "ssh_exec":
             if ssh is None:
                 obs = "ssh error: no target configured"
+            elif runtime.guard_shell and (reason := check_command(args["command"])):
+                obs = blocked_observation(args["command"], reason)
             else:
                 obs = run_ssh_exec(
                     ssh,
