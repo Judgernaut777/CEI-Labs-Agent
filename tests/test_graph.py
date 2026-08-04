@@ -178,3 +178,40 @@ def test_ssh_action_without_target_reports_no_target() -> None:
     assert observation_events[0]["text"] == "ssh error: no target configured"
     assert st.done is True
     assert st.result == FINISH_SUMMARY
+
+
+def test_blocked_command_never_reaches_ssh(monkeypatch) -> None:
+    """A destructive ssh_exec is refused by the guard without touching SSH."""
+    calls: list = []
+    monkeypatch.setattr(
+        ssh_mod, "ssh_exec",
+        lambda *a, **k: calls.append(a) or "SHOULD_NOT_HAPPEN",
+    )
+
+    source = StubModelSource(['{"action":"ssh_exec","command":"rm -rf /"}', FINISH_ACTION])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(), "qwen3:4b", 8192, 768, False, _ssh_cfg(),
+        )
+    )
+    assert calls == []  # SSH was never invoked
+    obs = [e for e in events if e["type"] == "observation"]
+    assert obs and obs[0]["text"].startswith("BLOCKED by safety guard")
+
+
+def test_guard_disabled_by_runtime_toggle(monkeypatch) -> None:
+    """runtime.guard_shell=False lets even destructive commands through."""
+    monkeypatch.setattr(ssh_mod, "ssh_exec", lambda *a, **k: "EXECUTED")
+    source = StubModelSource(['{"action":"ssh_exec","command":"rm -rf /"}', FINISH_ACTION])
+    st = AgentState(system_prompt="sys")
+    events = list(
+        stream_agent(
+            "help me",
+            st, source, RuntimeConfig(guard_shell=False),
+            "qwen3:4b", 8192, 768, False, _ssh_cfg(),
+        )
+    )
+    obs = [e for e in events if e["type"] == "observation"]
+    assert obs and obs[0]["text"] == "EXECUTED"
