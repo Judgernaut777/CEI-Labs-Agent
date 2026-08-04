@@ -176,6 +176,37 @@ REGISTRY: dict[str, ModelSpec] = {
         default_preset="Standard",
         notes="Multimodal/hybrid-thinking; opt-in only if thinking-off proves reliable.",
     ),
+    "MichelRosselli/bonsai-27b": ModelSpec(
+        tag="MichelRosselli/bonsai-27b",
+        display_name="Bonsai 27B (1-bit)",
+        tier="experimental",
+        # Unofficial Ollama upload of PrismML's 1-bit Q1_0_g128 build of
+        # Qwen3.6-27B (HF: prism-ml/Bonsai-27B-gguf). Requires a recent
+        # Ollama whose bundled llama.cpp has the Q1_0 hybrid-attention
+        # kernels merged; older servers will fail to load it.
+        download_gb=4.4,
+        # Measured peak (weights + FP16 KV + runtime) is ~5.2 GB at 4K ctx
+        # and ~5.6 GB at 10K ctx per the model card; 6 GB is the safe floor.
+        min_ram_gb=6.0,
+        native_max_ctx=262144,
+        # Derived from the card's measured peaks: (5.6-5.2) GB over 4K-10K
+        # ctx ~= 68 KB/token with an uncompressed KV cache (hybrid
+        # attention keeps a full cache on only 16 of 64 layers).
+        kv_bytes_per_token=68000,
+        thinking_capable=True,
+        hidden=True,
+        presets=[Preset(name="Standard", num_ctx=8192, num_predict=768, think=False)],
+        default_preset="Standard",
+        notes=(
+            "27B-class quality at a 4.4 GB pull, but 1-bit compression hits "
+            "instruction following and multi-step tool use hardest (BFCL "
+            "66.03 vs 80.00 FP16) -- exactly this agent's workload. Pilot "
+            "only: keep hidden until the eval harness beats qwen3:14b on "
+            "action validity at equal-or-better RAM. Dense 27B decode is "
+            "slow on CPU-only machines (~6-9 tok/s); fine on GPU/Apple "
+            "Silicon laptops since Ollama offloads automatically."
+        ),
+    ),
 }
 
 
