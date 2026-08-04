@@ -92,7 +92,9 @@ def build_system_prompt(runtime, ssh_target: str | None) -> str:
         parts.append("")
         parts.append(
             f"SSH TARGET: You are connected to {ssh_target}. Use ssh_exec to run "
-            "commands there and observe the results."
+            "commands there and observe the results. The session is persistent: "
+            "the working directory and exported variables carry over between "
+            "commands, so there is no need to re-`cd` or re-export every turn."
         )
     else:
         parts.append("")
