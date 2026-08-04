@@ -58,7 +58,7 @@ def stream_agent(
         Event dicts with a ``type`` key: ``assistant``, ``action``,
         ``observation``, ``invalid``, ``final`` or ``error``.
     """
-    run_ssh_exec = ssh_exec or ssh_tools.ssh_exec
+    run_ssh_exec = ssh_exec or ssh_tools.session_exec
     st.add("user", user_message)
     last_assistant_text: str = ""
     observations: list[str] = []
