@@ -40,6 +40,7 @@ Repository = "https://github.com/Judgernaut777/CEI-Labs-Agent"
 
 [project.scripts]
 ctf-agent = "cei_labs_agent.cli:main"
+ctf-agent-verify = "cei_labs_agent.verify:main"
 
 # --- Build configuration (src layout) -------------------------------------
 
@@ -48,15 +49,16 @@ ctf-agent = "cei_labs_agent.cli:main"
 sources = ["src"]
 
 [tool.hatch.build.targets.wheel]
-# Ship exactly the one package. hatchling includes non-Python files that live
-# inside the package tree, but we force-include the static assets below to make
-# the intent explicit and robust against any auto-detection quirks.
+# Ship exactly the one package. hatchling also bundles the non-Python files
+# that live inside the package tree (the static web UI under
+# cei_labs_agent/static/), which is exactly what we want.
 packages = ["src/cei_labs_agent"]
 
-[tool.hatch.build.targets.wheel.force-include]
-# Bundle the single-page web UI (HTML/CSS/JS) as package data so FileResponse
-# can serve it from the installed wheel.
-"src/cei_labs_agent/static" = "cei_labs_agent/static"
+# NOTE: no force-include for src/cei_labs_agent/static -- `packages` above
+# already bundles every file inside the package tree (including the static
+# web UI assets), and force-including them a second time makes hatchling
+# abort with "A second file is being added to the wheel archive at the same
+# path". The wheel must contain cei_labs_agent/static/* exactly once.
 
 [tool.hatch.build.targets.sdist]
 # Keep the source distribution lean but complete: the package, tests and docs.
