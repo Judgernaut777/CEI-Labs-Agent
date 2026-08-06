@@ -43,6 +43,35 @@ blurting out the raw flag, because the point is for *you* to learn.
 
 ---
 
+   ```markdown
+     ## Offline Installation
+
+     For users without internet access:
+
+     **Windows (PowerShell as Administrator):**
+     ```powershell
+     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   -Force
+     irm
+   https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-
+   click-install.ps1 | iex
+   ```
+
+   Linux/Mac:
+
+   ```bash
+     curl -fsSL
+   https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-
+   click-install.sh | bash
+   ```
+
+   Download size: ~3.8 GB (includes AI model)
+
+   Note: The Set-ExecutionPolicy command is required on most Windows
+   systems to allow running PowerShell scripts. This is a one-time setting
+   per user.
+
+   ```
 ## Install & run (one command)
 
 Copy the single line for your operating system, paste it into your terminal, and
