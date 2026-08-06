@@ -121,8 +121,8 @@
         <span class="term-title">Windows — PowerShell</span>
         <button class="term-copy" type="button">COPY</button>
       </div>
-      <pre><span class="pr">&gt;</span> powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/bootstrap.ps1 | iex"</pre>
-      <p class="note" style="margin-top:10px">Works even though Windows blocks downloaded scripts by default — <code>-ExecutionPolicy Bypass</code> applies to this one command only. No system setting is changed; you do NOT need <code>Set-ExecutionPolicy</code> or <code>Unblock-File</code>.</p>
+      <pre><span class="pr">&gt;</span> powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/bootstrap.ps1 | Out-String | iex"</pre>
+      <p class="note" style="margin-top:10px">Works even though Windows blocks downloaded scripts by default — <code>-ExecutionPolicy Bypass</code> applies to this one command only. No system setting is changed; you do NOT need <code>Set-ExecutionPolicy</code> or <code>Unblock-File</code>. (<code>Out-String</code> joins the whole download into one script before it runs — without it, older Windows PowerShell can feed the script to <code>iex</code> in chunks and fail with a bogus "missing terminator" error.)</p>
     </div>
     <div class="term mt">
       <div class="term-bar">
