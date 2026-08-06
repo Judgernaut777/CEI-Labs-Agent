@@ -6,15 +6,18 @@ This directory contains the CEI Labs Agent offline package split into 41 parts f
 
 ### Windows (PowerShell)
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-click-install.ps1 | iex
+powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/one-click-install.ps1 | Out-String | iex"
 ```
 
-**Note:** The `Set-ExecutionPolicy` command is required on most Windows systems to allow running PowerShell scripts. This is a one-time setting per user.
+**Note:** The `-ExecutionPolicy Bypass` applies to this one command only -- no
+system setting is changed, and you do **not** need `Set-ExecutionPolicy` or
+`Unblock-File`. (`Out-String` joins the whole download into one script before
+it runs -- without it, older Windows PowerShell can feed the script to `iex`
+in chunks and fail with a bogus "missing terminator" error.)
 
 ### Linux/Mac (Bash)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-click-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/one-click-install.sh | bash
 ```
 
 The one-click installer will:
