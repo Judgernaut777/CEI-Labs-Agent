@@ -176,6 +176,45 @@ REGISTRY: dict[str, ModelSpec] = {
         default_preset="Standard",
         notes="Multimodal/hybrid-thinking; opt-in only if thinking-off proves reliable.",
     ),
+    "MichelRosselli/bonsai-27b": ModelSpec(
+        tag="MichelRosselli/bonsai-27b",
+        display_name="Bonsai 27B (1-bit)",
+        tier="experimental",
+        # Unofficial Ollama upload of PrismML's 1-bit Q1_0_g128 build of
+        # Qwen3.6-27B (HF: prism-ml/Bonsai-27B-gguf). Requires a recent
+        # Ollama whose bundled llama.cpp has the Q1_0 hybrid-attention
+        # kernels merged; older servers will fail to load it.
+        download_gb=4.4,
+        # Measured peak (weights + FP16 KV + runtime) is ~5.2 GB at 4K ctx
+        # and ~5.6 GB at 10K ctx per the model card; 6 GB is the safe floor.
+        min_ram_gb=6.0,
+        native_max_ctx=262144,
+        # Derived from the card's measured peaks: (5.6-5.2) GB over 4K-10K
+        # ctx ~= 68 KB/token with an uncompressed KV cache (hybrid
+        # attention keeps a full cache on only 16 of 64 layers).
+        kv_bytes_per_token=68000,
+        thinking_capable=True,
+        hidden=True,
+        presets=[Preset(name="Standard", num_ctx=8192, num_predict=768, think=False)],
+        default_preset="Standard",
+        notes=(
+            "27B-class quality at a 4.4 GB pull, but 1-bit compression hits "
+            "instruction following and multi-step tool use hardest (BFCL "
+            "66.03 vs 80.00 FP16) -- exactly this agent's workload. "
+            "MEASURED 2026-08-05 (MS-R1, CIX P1 aarch64 CPU-only, Ollama "
+            "0.32.5, 3x10 temp-0 cases at this preset): action validity "
+            "80.0% vs qwen3:14b's 100.0%, and ~5x slower wall-clock per "
+            "call (81s vs 16s -- Q1_0 has no optimized ARM prompt-"
+            "processing kernel). Fails the promotion bar (must beat "
+            "qwen3:14b on action validity), so it stays hidden; the only "
+            "remaining argument for it is footprint (4.4 GB vs 9.3 GB). "
+            "Revisit only if a small-footprint tier becomes a requirement; "
+            "re-run the eval on GPU then (validity is hardware-independent, "
+            "speed is not). Format discipline was flawless (30/30 single "
+            "well-formed JSON) -- both failures were wrong action CHOICE, "
+            "so constrained decoding could narrow the gap."
+        ),
+    ),
 }
 
 
