@@ -22,11 +22,12 @@ EXPECTED_TAGS = {
     "qwen3:8b",
     "qwen3:14b",
     "qwen3.5:4b",
+    "MichelRosselli/bonsai-27b",
 }
 
 
-def test_all_six_tags_present() -> None:
-    """The registry contains exactly the six contracted tags."""
+def test_all_seven_tags_present() -> None:
+    """The registry contains exactly the seven contracted tags."""
     assert set(REGISTRY.keys()) == EXPECTED_TAGS
 
 
@@ -146,11 +147,13 @@ def test_list_models_excludes_hidden_by_default() -> None:
     """list_models hides qwen3.5:4b unless include_hidden is set."""
     visible = [m.tag for m in list_models(include_hidden=False)]
     assert "qwen3.5:4b" not in visible
+    assert "MichelRosselli/bonsai-27b" not in visible
     assert len(visible) == 5
 
     everything = [m.tag for m in list_models(include_hidden=True)]
     assert "qwen3.5:4b" in everything
-    assert len(everything) == 6
+    assert "MichelRosselli/bonsai-27b" in everything
+    assert len(everything) == 7
 
 
 def test_list_models_ordered_by_tier() -> None:
