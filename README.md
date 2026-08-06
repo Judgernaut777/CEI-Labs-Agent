@@ -48,28 +48,22 @@ blurting out the raw flag, because the point is for *you* to learn.
 
      For users without internet access:
 
-     **Windows (PowerShell as Administrator):**
+     **Windows (PowerShell):**
      ```powershell
-     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-   -Force
-     irm
-   https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-
-   click-install.ps1 | iex
-   ```
+     powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/one-click-install.ps1 | Out-String | iex"
+     ```
 
    Linux/Mac:
 
    ```bash
-     curl -fsSL
-   https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/one-
-   click-install.sh | bash
+     curl -fsSL https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/one-click-install.sh | bash
    ```
 
    Download size: ~3.8 GB (includes AI model)
 
-   Note: The Set-ExecutionPolicy command is required on most Windows
-   systems to allow running PowerShell scripts. This is a one-time setting
-   per user.
+   Note: The `-ExecutionPolicy Bypass` in the command above applies to that
+   one command only -- no system setting is changed, and you do **not** need
+   `Set-ExecutionPolicy` or `Unblock-File`.
 
    ```
 ## Install & run (one command)
@@ -88,16 +82,24 @@ web browser.
 Open the **Terminal** app and paste:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/bootstrap.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/bootstrap.sh | sh
 ```
 
 ### Windows
 
-Open **PowerShell** (search for it in the Start menu, then click it) and paste:
+Open **PowerShell** (search for it in the Start menu, then click it) and paste
+this one line:
 
 ```powershell
-irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/main/bootstrap.ps1 | iex
+powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/Judgernaut777/CEI-Labs-Agent/claude/cei-labs-agent-models-002oeu/bootstrap.ps1 | Out-String | iex"
 ```
+
+The `-ExecutionPolicy Bypass` applies to this one command only -- it does not
+change any system setting, and because the script runs in memory there is
+nothing to unblock. You do **not** need `Set-ExecutionPolicy` or
+`Unblock-File` with this command. (`Out-String` joins the whole download into
+one script before it runs -- without it, older Windows PowerShell can feed the
+script to `iex` in chunks and fail with a bogus "missing terminator" error.)
 
 That's it. When the browser tab opens, you're ready to go.
 
