@@ -16,7 +16,13 @@
   document.querySelectorAll(".term-copy").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var pre = btn.closest(".term").querySelector("pre");
-      var text = pre.innerText.replace(/\u2588/g, "").trim();
+      // Copy only the COMMAND text: clone the block and drop the prompt
+      // markers (.pr, the ">" / "$" decoration spans) and the blinking cursor,
+      // so a paste never starts with a stray ">" (which PowerShell rejects
+      // with "The term '>' is not recognized").
+      var clone = pre.cloneNode(true);
+      clone.querySelectorAll(".pr, .cursor").forEach(function (el) { el.remove(); });
+      var text = clone.textContent.replace(/\u2588/g, "").trim();
       navigator.clipboard.writeText(text).then(function () {
         var old = btn.textContent;
         btn.textContent = "COPIED";
